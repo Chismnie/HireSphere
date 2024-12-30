@@ -47,10 +47,10 @@ stages:
         deployArtifact:
           - source: build
             name: output
-            target: /giteeCDtest
+            target: /HireSphere
             dependArtifact: BUILD_ARTIFACT
         script:
-          - cd /giteeCDtest
+          - cd /HireSphere
           - ls
           - tar -zxf output.tar.gz
           - echo 'Hello Gitee Go!'
