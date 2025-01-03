@@ -7,3 +7,10 @@ export const login = (data: object) => {
     method: "GET",
   });
 };
+
+export const upload = (id: number) => {
+  return request({
+    url: `/home/${id}`,
+    method: "GET",
+  });
+};
