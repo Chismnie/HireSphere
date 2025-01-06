@@ -24,9 +24,9 @@ function App() {
     dispatch(changeItemStatus(itemToUpload));
     dispatch(changeNowLength(+1));
     
-    reqMap[itemToUpload.type](itemToUpload.data).then((res) => {
+    reqMap[itemToUpload.type](itemToUpload.data as never).then((res) => {
       console.log(res);
-      dispatch(clearList(itemToUpload));
+      dispatch(clearList(itemToUpload)); 
       dispatch(changeNowLength(-1));
       // 完成一个上传后，检查是否还有待上传项
     });

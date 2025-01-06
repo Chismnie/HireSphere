@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { reqMap } from "@/state/common";
 
 // 定义请求类型
-type reqType = {
+export type reqType = {
   type: keyof typeof reqMap;
   data: any;
   status: boolean;
@@ -25,26 +25,14 @@ const UploadSlice = createSlice({
   } as stateType, // 显式指定 initialState 的类型为 stateType
   reducers: {
     //添加队列
-    changeList: (
-      state,
-      action: PayloadAction<reqType[]>,
-      type?: "replace" | "push"
-    ) => {
-      // action.payload 类型为 reqType[]
-      if (type === "replace") {
-        state.list = action.payload.map((item) => ({
+    changeList: (state, action: PayloadAction<Omit<reqType, "status">[]>) => {
+      state.list = [
+        ...state.list,
+        ...action.payload.map((item) => ({
           ...item,
           status: false,
-        }));
-      } else {
-        state.list = [
-          ...state.list,
-          ...action.payload.map((item) => ({
-            ...item,
-            status: false,
-          })),
-        ];
-      }
+        })),
+      ];
     },
     //已经完成后删除某个队列
     clearList: (state, action: PayloadAction<reqType>) => {
