@@ -2,6 +2,7 @@ import { Button } from "antd";
 // import { useDispatch } from "react-redux";
 // import { changeList } from "@/store/modules/upload";
 import { uploadPdf, uploadImage ,upload} from "@/apis/api";
+import { clearRequestQueue } from "@/utils/request";
 // import { fileToReduxFormat } from "@/utils/common";
 const Home: React.FC = () => {
   // const dispatch = useDispatch();
@@ -53,6 +54,9 @@ let index=1
     <div>
       <Button type="primary" onClick={handleAddToList}>
         修改List
+      </Button>
+      <Button type="primary" onClick={clearRequestQueue}>
+        清除队列
       </Button>
       上传文件，限制为img
       {/* 上传文件，限制为img和pdf */}

@@ -56,6 +56,12 @@ class RequestQueue {
       }
     }
   }
+
+  // 清除所有请求队列
+  clearQueue() {
+    this.queue = [];
+    this.activeCount = 0;
+  }
 }
 
 const axiosInstance = axios.create({
@@ -66,4 +72,9 @@ const requestQueue = new RequestQueue();
 
 export const request = (options: any) => {
   return requestQueue.add(options);
+};
+
+// 导出清除队列方法
+export const clearRequestQueue = () => {
+  requestQueue.clearQueue();
 };
