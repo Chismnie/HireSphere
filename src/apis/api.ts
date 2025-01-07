@@ -25,6 +25,7 @@ export const uploadImage = (data: File) => {
     method: "POST",
     Headers: {
       "Content-Type": "multipart/form-data",
+      pop: true,
     },
   });
 };
@@ -39,6 +40,7 @@ export const uploadPdf = (file: File) => {
     method: "POST",
     Headers: {
       "Content-Type": "multipart/form-data",
+      pop: true,
     },
   });
 };

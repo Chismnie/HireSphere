@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { reqMap } from "@/state/common";
-
+/**
+ * 上传队列
+ * 暂时不用，先废弃
+ */
 // 定义请求类型
 export type reqType = {
   type: keyof typeof reqMap;

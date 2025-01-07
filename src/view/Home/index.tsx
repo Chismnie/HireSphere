@@ -1,21 +1,24 @@
 import { Button } from "antd";
-import { useDispatch } from "react-redux";
-import { changeList } from "@/store/modules/upload";
+// import { useDispatch } from "react-redux";
+// import { changeList } from "@/store/modules/upload";
+import { uploadPdf, uploadImage ,upload} from "@/apis/api";
 // import { fileToReduxFormat } from "@/utils/common";
 const Home: React.FC = () => {
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
 let index=1
   const handleAddToList = () => {
     index++;
-    dispatch(changeList(
-      [
-        {
-          type: "up",
-          data: index,
-        },
-      ],
-
-    ));
+    // dispatch(changeList(
+    //   [
+    //     {
+    //       type: "up",
+    //       data: index,
+    //     },
+    //   ],
+    // ));
+    upload(index).then(res => {
+      console.log(res);
+    });
   };
 
 
@@ -23,18 +26,26 @@ let index=1
     const files = e.target.files;
     if (files) {
       const fileArray = Array.from(files);
-      const uploadList = fileArray.map(file => ({
-        type: "pdf" as const,
-        data: file
-      }));
-      dispatch(changeList(uploadList));
+      // const uploadList = fileArray.map(file => ({
+      //   type: "pdf" as const,
+      //   data: file
+      // }));
+      // dispatch(changeList(uploadList));
+      fileArray.forEach(file => {
+        uploadPdf(file).then(res => {
+          console.log(res);
+        });
+      });
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      dispatch(changeList([{ type: "img", data:file }]));
+      // dispatch(changeList([{ type: "img", data:file }]));
+      uploadImage(file).then(res => {
+        console.log(res);
+      });
     }
   };
 
