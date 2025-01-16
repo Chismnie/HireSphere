@@ -53,6 +53,10 @@ const Home: React.FC = () => {
     <div>
       <h1>home</h1>
       <h2>这个上home页面</h2>
+      <p>
+        这个是home页，切换为ts成功，并且可以正常访问，并且可以正常访问。
+        目前功能主要是进行人工模拟对话，可以进行对话，并且可以进行对话的记录。
+      </p>
       <Button type="primary" onClick={handleAddToList}>
         修改List
       </Button>

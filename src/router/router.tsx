@@ -14,6 +14,10 @@ const routers = [
   {
     path: "/home",
     element: <Home />,
+    meta: {
+      title: "Home",
+      description: "这里是home页面,我们可以用来选择",
+    },
   },
   {
     path: "/hiresphere",
