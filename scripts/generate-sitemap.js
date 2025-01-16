@@ -25,6 +25,11 @@ const routes = [
     priority: 0.8,
     changefreq: "monthly",
   },
+  {
+    path: "/hiresphere",
+    priority: 1,
+    changefreq: "monthly",
+  },
   // 添加更多路由
 ];
 
