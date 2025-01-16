@@ -2,10 +2,10 @@ import { writeFileSync } from 'fs';
 
 // 定义网站的 URL 列表
 const urls = [
+    'https://yanmengsss.xyz/',
     'https://yanmengsss.xyz/home',
     'https://yanmengsss.xyz/hiresphere',
     'https://yanmengsss.xyz/login',
-    'https://yanmengsss.xyz/'
 ];
 
 // 将 URL 列表转换为字符串，每个 URL 占一行
