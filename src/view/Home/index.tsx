@@ -1,12 +1,12 @@
 import { Button } from "antd";
 // import { useDispatch } from "react-redux";
 // import { changeList } from "@/store/modules/upload";
-import { uploadPdf, uploadImage ,upload} from "@/apis/api";
+import { uploadPdf, uploadImage, upload } from "@/apis/api";
 import { clearRequestQueue } from "@/utils/request";
 // import { fileToReduxFormat } from "@/utils/common";
 const Home: React.FC = () => {
   // const dispatch = useDispatch();
-let index=1
+  let index = 1;
   const handleAddToList = () => {
     index++;
     // dispatch(changeList(
@@ -17,11 +17,10 @@ let index=1
     //     },
     //   ],
     // ));
-    upload(index).then(res => {
+    upload(index).then((res) => {
       console.log(res);
     });
   };
-
 
   const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -32,8 +31,8 @@ let index=1
       //   data: file
       // }));
       // dispatch(changeList(uploadList));
-      fileArray.forEach(file => {
-        uploadPdf(file).then(res => {
+      fileArray.forEach((file) => {
+        uploadPdf(file).then((res) => {
           console.log(res);
         });
       });
@@ -44,7 +43,7 @@ let index=1
     const file = e.target.files?.[0];
     if (file) {
       // dispatch(changeList([{ type: "img", data:file }]));
-      uploadImage(file).then(res => {
+      uploadImage(file).then((res) => {
         console.log(res);
       });
     }
@@ -52,6 +51,8 @@ let index=1
 
   return (
     <div>
+      <h1>home</h1>
+      <h2>这个上home页面</h2>
       <Button type="primary" onClick={handleAddToList}>
         修改List
       </Button>
@@ -60,12 +61,21 @@ let index=1
       </Button>
       上传文件，限制为img
       {/* 上传文件，限制为img和pdf */}
-      <input type="file" accept="image/*,application/pdf" onChange={handleImageChange} />
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={handleImageChange}
+      />
       {/* 上传文件，限制为pdf */}
       上传文件，限制为pdf
-      <input type="file" accept="application/pdf" onChange={handlePdfChange} multiple />
+      <input
+        type="file"
+        accept="application/pdf"
+        onChange={handlePdfChange}
+        multiple
+      />
     </div>
-  );  
+  );
 };
 
 export default Home;

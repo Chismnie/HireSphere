@@ -10,6 +10,8 @@ const Login: React.FC = () => {
 
   return (
     <div>
+      <h1>login</h1>
+      <h2>这个上login页面</h2>
       <Button type="primary" onClick={handleClick}>
         这个是登录页切换为ts成功
       </Button>
