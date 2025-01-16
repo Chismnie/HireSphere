@@ -11,7 +11,7 @@ const domain = "https://yanmengsss.xyz";
 // 定义你的路由
 const routes = [
   {
-    path: "/",
+    path: "",
     priority: 0.8,
     changefreq: "monthly",
   },
