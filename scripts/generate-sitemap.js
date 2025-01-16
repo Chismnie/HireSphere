@@ -50,7 +50,7 @@ function generateSitemap() {
         .join("")}
     </urlset>`;
 
-  writeFileSync(resolve(__dirname, "../dist/sitemap.xml"), sitemap);
+  writeFileSync(resolve(__dirname, "../dist/Sitemap.xml"), sitemap);
   console.log("Sitemap generated successfully!");
 }
 
