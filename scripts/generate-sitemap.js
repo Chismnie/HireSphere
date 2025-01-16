@@ -11,14 +11,19 @@ const domain = "https://yanmengsss.xyz";
 // 定义你的路由
 const routes = [
   {
+    path: "/",
+    priority: 0.8,
+    changefreq: "monthly",
+  },
+  {
     path: "/home",
     priority: 1,
-    changefreq: "weekly",
+    changefreq: "monthly",
   },
   {
     path: "/login",
     priority: 0.8,
-    changefreq: "weekly",
+    changefreq: "monthly",
   },
   // 添加更多路由
 ];
