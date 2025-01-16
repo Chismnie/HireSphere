@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import Login from "../view/Login/login";
 import Home from "../view/Home/index";
 import Hiresphere from "../view/Hiresphere/index";
