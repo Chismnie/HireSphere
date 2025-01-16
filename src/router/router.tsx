@@ -2,10 +2,11 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Login from "../view/Login/login";
 import Home from "../view/Home/index";
 import Hiresphere from "../view/Hiresphere/index";
+import Welcome from "../view/Welcome/index";
 const routers = [
   {
     path: "/",
-    element: <Navigate to="/login" replace />, // 默认重定向到登录页面
+    element: <Welcome />, // 默认重定向到登录页面
   },
   {
     path: "/login",

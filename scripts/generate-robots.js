@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 const robotsTxt = `User-agent: *
 Allow: /
 
-Sitemap: https://yanmengsss.xyz/sitemap.xml`;
+Sitemap: https://yanmengsss.xyz/Sitemap.xml`;
 
 writeFileSync(resolve(__dirname, "../dist/robots.txt"), robotsTxt);
 console.log("Robots.txt generated successfully!");

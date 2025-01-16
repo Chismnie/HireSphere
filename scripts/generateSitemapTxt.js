@@ -4,7 +4,8 @@ import { writeFileSync } from 'fs';
 const urls = [
     'https://yanmengsss.xyz/home',
     'https://yanmengsss.xyz/hiresphere',
-    'https://yanmengsss.xyz/login'
+    'https://yanmengsss.xyz/login',
+    'https://yanmengsss.xyz/'
 ];
 
 // 将 URL 列表转换为字符串，每个 URL 占一行
