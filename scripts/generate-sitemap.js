@@ -13,22 +13,22 @@ const routes = [
   {
     path: "/",
     priority: 0.8,
-    changefreq: "monthly",
+    changefreq: "daily",
   },
   {
     path: "/home",
     priority: 1,
-    changefreq: "monthly",
+    changefreq: "daily",
   },
   {
     path: "/login",
     priority: 0.8,
-    changefreq: "monthly",
+    changefreq: "daily",
   },
   {
     path: "/hiresphere",
     priority: 1,
-    changefreq: "monthly",
+    changefreq: "daily",
   },
   // 添加更多路由
 ];
