@@ -33,7 +33,6 @@ export const uploadImage = (data: File) => {
 export const uploadPdf = (file: File) => {
   const formData = new FormData();
   formData.append("pdf", file); // 将文件添加到 FormData 中
-  console.log("上传ing");
   return request({
     url: "/upload-pdf",
     data: formData,
@@ -44,7 +43,6 @@ export const uploadPdf = (file: File) => {
     },
   });
 };
-
 //sse
 export const getFetchSse = () => {
   return fetchReader("/stream", {
