@@ -1,6 +1,7 @@
 //utils.js
 import axios from "axios";
-axios.defaults.baseURL = "http://yanmengsss.xyz:3005";
+const baseURL = "http://yanmengsss.xyz:3005";
+axios.defaults.baseURL = baseURL;
 
 interface QueueItem {
   options: any;
@@ -28,14 +29,13 @@ class RequestQueue {
           this.queue.push(queueItem);
         }
       } else {
-        this.processRequest(queueItem);
+        this.processNormalRequest(queueItem);
       }
     });
   }
 
   private async processRequest(queueItem: QueueItem) {
     this.activeCount++;
-
     try {
       const response = await axiosInstance(queueItem.options);
       queueItem.resolve(response.data);
@@ -46,7 +46,16 @@ class RequestQueue {
       this.processNextRequest();
     }
   }
-
+  private async processNormalRequest(queueItem: QueueItem) {
+    try {
+      const response = await axiosInstance(queueItem.options);
+      queueItem.resolve(response.data);
+    } catch (error) {
+      queueItem.reject(error);
+    } finally {
+      this.processNextRequest();
+    }
+  }
   private processNextRequest() {
     if (this.queue.length > 0 && this.activeCount < this.maxConcurrent) {
       const nextRequest = this.queue.shift();
@@ -76,4 +85,59 @@ export const request = (options: any) => {
 // 导出清除队列方法
 export const clearRequestQueue = () => {
   requestQueue.clearQueue();
+};
+
+/**
+ * @name fetchSse
+ * @description 使用fetch来实现sse,使用的时候传入url和options
+ * @param url
+ * @param options
+ * @returns //reader是流读取器，decoder是解码器，reader里面包含value和done
+ * @example
+ * //api封装
+ * //sse
+export const getFetchSse = () => {
+  return fetchReader("/stream", {
+    method: "GET",
+  });
+};
+
+  //获取数据及处理
+    getFetchSse().then(async ({ reader, decoder }) => {
+      // 循环读取流数据
+      let done = false;
+      while (!done) {
+        // 读取流中的一部分
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (!done) {
+          let buffer = "";
+          buffer = decoder.decode(value, { stream: true });
+          const parsedMessage = JSON.parse(buffer);
+          console.log({ value: parsedMessage, status: done }); // 输出每次的内容
+        }
+      }
+    });
+ * 
+ * 
+ */
+export const fetchReader = (url: string, options: RequestInit = {}) => {
+  const decoder = new TextDecoder();
+  return new Promise<{
+    reader: ReadableStreamDefaultReader<Uint8Array>;
+    decoder: TextDecoder;
+  }>((resolve, reject) => {
+    fetch(`${baseURL}${url}`, options)
+      .then((response) => {
+        const reader = response.body?.getReader();
+        if (reader) {
+          resolve({ reader, decoder });
+        } else {
+          reject(new Error("Response body is null"));
+        }
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
 };

@@ -2,8 +2,7 @@
 /**
  * 请求头里面加上 pop: true 表示是需要加入控制并发请求队列
  */
-import { request } from "../utils/request";
-
+import { request, fetchReader } from "../utils/request";
 export const login = (data: object) => {
   return request({
     url: "/login",
@@ -43,5 +42,12 @@ export const uploadPdf = (file: File) => {
       "Content-Type": "multipart/form-data",
       pop: true,
     },
+  });
+};
+
+//sse
+export const getFetchSse = () => {
+  return fetchReader("/stream", {
+    method: "GET",
   });
 };
