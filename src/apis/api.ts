@@ -1,4 +1,7 @@
-//api.js
+//api.ts
+/**
+ * 请求头里面加上 pop: true 表示是需要加入控制并发请求队列
+ */
 import { request } from "../utils/request";
 
 export const login = (data: object) => {
@@ -8,14 +11,12 @@ export const login = (data: object) => {
     method: "GET",
   });
 };
-
 export const upload = (id: number) => {
   return request({
     url: `/home/${id}`,
     method: "GET",
   });
 };
-
 export const uploadImage = (data: File) => {
   const formData = new FormData();
   formData.append("image", data); // 将文件添加到 FormData 中
