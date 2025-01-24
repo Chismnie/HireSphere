@@ -1,22 +1,19 @@
 import { Button } from "antd";
-// import { useDispatch } from "react-redux";
-// import { changeList } from "@/store/modules/upload";
 import { uploadPdf, uploadImage, upload } from "@/apis/api";
 import { clearRequestQueue } from "@/utils/request";
+// import useUploadStore from "@/store/modules/upload";
 // import { fileToReduxFormat } from "@/utils/common";
 const Home: React.FC = () => {
-  // const dispatch = useDispatch();
   let index = 1;
+  // const { changeList } = useUploadStore();
   const handleAddToList = () => {
     index++;
-    // dispatch(changeList(
-    //   [
-    //     {
-    //       type: "up",
-    //       data: index,
-    //     },
-    //   ],
-    // ));
+    // changeList([
+    //   {
+    //     type: "up",
+    //     data: index,
+    //   },
+    // ]);
     upload(index).then((res) => {
       console.log(res);
     });
@@ -30,7 +27,7 @@ const Home: React.FC = () => {
       //   type: "pdf" as const,
       //   data: file
       // }));
-      // dispatch(changeList(uploadList));
+      // changeList(uploadList);
       fileArray.forEach((file) => {
         uploadPdf(file).then((res) => {
           console.log(res);
@@ -42,7 +39,7 @@ const Home: React.FC = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // dispatch(changeList([{ type: "img", data:file }]));
+      // changeList([{ type: "img", data:file }]);
       uploadImage(file).then((res) => {
         console.log(res);
       });

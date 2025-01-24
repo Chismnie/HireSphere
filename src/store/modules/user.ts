@@ -1,19 +1,18 @@
-import { createSlice } from "@reduxjs/toolkit";
-const UserSlice = createSlice({
-  name: "user",
-  initialState: {
-    id: "",
-    token: "",
+import { create } from "zustand";
+
+interface StoreType {
+  id: string,
+  token: string
+}
+
+const useUserStore = create<StoreType>((set) => ({
+  id: "",
+  token: "",
+  changeId: (newId: string) => set({ id: newId }),
+  changeToken: (newToken: string) => {
+    set({ token: newToken });
+    localStorage.setItem("token", newToken);
   },
-  reducers: {
-    changeId: (state, action) => {
-      state.id = action.payload;
-    },
-    changeToken: (state, action) => {
-      state.token = action.payload;
-      localStorage.setItem("token", action.payload);
-    },
-  },
-});
-export const { changeId, changeToken } = UserSlice.actions;
-export default UserSlice.reducer;
+}));
+
+export default useUserStore;

@@ -1,5 +1,5 @@
 import { upload, uploadImage, uploadPdf } from "../apis/api";
-export const reqMap = {
+export const ReqMap = {
   up: upload,
   img: uploadImage,
   pdf: uploadPdf,
