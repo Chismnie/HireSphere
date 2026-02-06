@@ -1,6 +1,6 @@
 //utils.js
-import axios from "axios";
-const baseURL = "http://yanmengsss.xyz:3005";
+import axios from 'axios';
+const baseURL = 'http://yanmengsss.xyz:3005';
 axios.defaults.baseURL = baseURL;
 
 interface QueueItem {
@@ -133,7 +133,7 @@ export const fetchReader = (url: string, options: RequestInit = {}) => {
         if (reader) {
           resolve({ reader, decoder });
         } else {
-          reject(new Error("Response body is null"));
+          reject(new Error('Response body is null'));
         }
       })
       .catch((error) => {

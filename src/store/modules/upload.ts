@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { ReqMap } from "@/state/common";
+import { create } from 'zustand';
+import { ReqMap } from '@/state/common';
 /**
  * 上传队列
  * 暂时不用，先废弃
@@ -16,7 +16,7 @@ type StateType = {
   list: ReqType[]; // list 类型为 reqType 数组
   maxLength: number; // 最大发送数量
   nowLength: number; // 当前发送数量
-  changeList: (items: Omit<ReqType, "status">[]) => void; // 添加队列
+  changeList: (items: Omit<ReqType, 'status'>[]) => void; // 添加队列
   clearList: (item: ReqType) => void; // 删除某个队列
   changeNowLength: (length: number) => void; // 改变当前发送数量
   changeItemStatus: (item: ReqType) => void; // 改变某个请求的状态
