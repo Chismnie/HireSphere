@@ -44,7 +44,7 @@ const TalentReportPage: React.FC = () => {
                 <Button 
                     type="text" 
                     icon={<ArrowLeftOutlined className="text-xl"/>} 
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate('/hr', { state: { activeTab: 'talent' } })}
                     className="hover:bg-gray-100 rounded-full h-10 w-10 flex items-center justify-center"
                 />
                 <div className="flex flex-col gap-1">
@@ -81,7 +81,7 @@ const TalentReportPage: React.FC = () => {
         <Content className="relative z-10 flex-1 overflow-hidden p-6">
             <div className="flex h-full w-full gap-4">
                 
-                {/* Left Column: Personal Info & AI Assessment */}
+                {/* Left Column: AI Assessment & Personal Info */}
                 <div className="flex w-1/4 flex-col gap-4">
                     {/* Personal Info Card */}
                     <div className="flex flex-col items-center rounded-2xl border border-gray-300 bg-white/80 p-6 shadow-sm backdrop-blur-md">
@@ -103,6 +103,7 @@ const TalentReportPage: React.FC = () => {
                         <div className="flex items-center gap-2 mb-4 border-l-4 border-purple-500 pl-3">
                             <Title level={4} className="!mb-0">AI 智能评估</Title>
                         </div>
+                        
                         <div className="flex-1 w-full min-h-[200px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={mockRadarData}>
@@ -112,6 +113,32 @@ const TalentReportPage: React.FC = () => {
                                     <Radar name="张三" dataKey="A" stroke="#8b5cf6" strokeWidth={2} fill="#a78bfa" fillOpacity={0.3} />
                                 </RadarChart>
                             </ResponsiveContainer>
+                        </div>
+
+                        {/* Analysis Text */}
+                        <div className="mt-4 space-y-3">
+                            <div className="rounded-xl bg-green-50 p-3 border border-green-100">
+                                <div className="flex items-center gap-2 text-green-700 font-bold mb-1">
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    核心优势
+                                </div>
+                                <ul className="list-disc list-inside text-xs text-green-800 space-y-1 pl-1">
+                                    <li>技术底层原理理解极其深刻</li>
+                                    <li>具备大型互联网公司架构实战经验</li>
+                                    <li>逻辑思维极其严密，抗压性强</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="rounded-xl bg-red-50 p-3 border border-red-100">
+                                <div className="flex items-center gap-2 text-red-700 font-bold mb-1">
+                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                    潜在风险
+                                </div>
+                                <ul className="list-disc list-inside text-xs text-red-800 space-y-1 pl-1">
+                                    <li>薪资预期较高 (高于平均水平20%)</li>
+                                    <li>稳定性存疑: 曾有6个月的职业空窗期</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -150,6 +177,33 @@ const TalentReportPage: React.FC = () => {
                                 <div className="flex gap-4 text-xs font-bold">
                                     <span className="text-green-600">● 真实度: 高</span>
                                     <span className="text-green-600">● 逻辑性: 优秀</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Q2 */}
+                        <div className="flex flex-col gap-3">
+                            <div className="flex gap-3">
+                                <Avatar className="bg-purple-100 text-purple-600 border border-gray-300 shrink-0">Q2</Avatar>
+                                <div className="rounded-2xl rounded-tl-none border border-gray-300 bg-gray-50 p-4 text-sm text-gray-800 shadow-sm">
+                                    <span className="font-bold">关于那段 6 个月的空窗期，你能详细说明一下原因吗？</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pl-12">
+                                <div className="relative rounded-2xl border-l-4 border-l-gray-300 border-t border-r border-b border-gray-200 bg-white p-6 text-sm text-gray-600 italic shadow-sm">
+                                    <span className="text-4xl text-gray-200 absolute top-2 left-2">“</span>
+                                    额，当时主要是想自己创业做一个垂直电商的小程序，但是后来由于融资没到位就停下来了。这段时间我也在学习...
+                                    <span className="text-4xl text-gray-200 absolute bottom-[-10px] right-4">”</span>
+                                </div>
+                            </div>
+                            
+                            {/* AI Analysis Box */}
+                            <div className="ml-12 mt-2 rounded-xl border border-orange-200 bg-orange-50 p-4">
+                                <div className="flex items-center gap-2 mb-2 text-orange-700 font-bold">
+                                    <BulbOutlined /> AI 预警:
+                                </div>
+                                <div className="text-sm text-orange-900 mb-0">
+                                    候选人在回答此问题时语速明显变慢，且有回避视线的动作（基于视频分析）。虽然理由合理，但建议进行背景调查。
                                 </div>
                             </div>
                         </div>

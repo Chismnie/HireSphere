@@ -11,10 +11,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ allowedRoles, children }) => {
   const { token, role } = useUserStore();
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(role)) {
+  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
     return <Navigate to="/403" replace />;
   }
 

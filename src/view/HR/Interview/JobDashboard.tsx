@@ -96,7 +96,7 @@ const JobDashboard: React.FC = () => {
       <div className="mb-6 flex gap-4 px-2">
         <Select
           defaultValue="all"
-          className="w-48 rounded-lg bg-white/80 backdrop-blur-sm"
+          className="w-48 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300"
           bordered={false}
           size="large"
           options={[
@@ -109,7 +109,7 @@ const JobDashboard: React.FC = () => {
         />
         <Select
           defaultValue="all"
-          className="w-48 rounded-lg bg-white/80 backdrop-blur-sm"
+          className="w-48 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300"
           bordered={false}
           size="large"
           options={[
@@ -121,7 +121,7 @@ const JobDashboard: React.FC = () => {
         />
         <Select
           defaultValue="default"
-          className="w-48 rounded-lg bg-white/80 backdrop-blur-sm"
+          className="w-48 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300"
           bordered={false}
           size="large"
           options={[
@@ -138,19 +138,13 @@ const JobDashboard: React.FC = () => {
         {filteredCandidates.map((candidate) => (
           <div
             key={candidate.id}
-            className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white/90 p-6 shadow-sm backdrop-blur-md transition-all hover:shadow-md"
+            className="flex items-center justify-between rounded-2xl border border-gray-300 bg-white/90 p-6 shadow-sm backdrop-blur-md transition-all hover:shadow-md"
           >
             {/* Left: Avatar & Info */}
             <div className="flex items-center gap-6">
               {/* Avatar */}
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/5">
-                {candidate.id === '1' ? (
-                  <UserOutlined className="text-3xl text-gray-800" />
-                ) : candidate.id === '2' ? (
-                  <div className="text-3xl">👨🏻‍💻</div>
-                ) : (
-                  <UserOutlined className="text-3xl text-gray-800" />
-                )}
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-50 border border-gray-300">
+                <UserOutlined className="text-3xl text-gray-600" />
               </div>
 
               {/* Info Block */}
@@ -161,13 +155,13 @@ const JobDashboard: React.FC = () => {
 
                 {/* Tags Row */}
                 <div className="flex items-center gap-3">
-                  <span className="rounded-full border border-cyan-100 bg-cyan-50 px-4 py-1 text-sm font-medium text-cyan-700">
+                  <span className="rounded-full border border-gray-300 bg-cyan-50 px-4 py-1 text-sm font-medium text-cyan-700">
                     职位 ({candidate.position})
                   </span>
-                  <span className="rounded-full border border-lime-100 bg-lime-50 px-4 py-1 text-sm font-medium text-lime-700">
+                  <span className="rounded-full border border-gray-300 bg-lime-50 px-4 py-1 text-sm font-medium text-lime-700">
                     匹配度: {candidate.matchScore}%
                   </span>
-                  <span className="rounded-full border border-purple-100 bg-purple-50 px-4 py-1 text-sm font-medium text-purple-700">
+                  <span className="rounded-full border border-gray-300 bg-purple-50 px-4 py-1 text-sm font-medium text-purple-700">
                     状态: {candidate.status === 'pending' ? '未面试' : '已面试'}
                   </span>
                 </div>
@@ -184,8 +178,7 @@ const JobDashboard: React.FC = () => {
               {candidate.status === 'pending' ? (
                 <Button
                   type="primary"
-                  size="large"
-                  className="flex h-12 items-center gap-2 rounded-lg border-0 bg-blue-600 px-6 text-sm font-medium shadow-lg shadow-blue-200 hover:bg-blue-700"
+                  className="flex h-10 items-center gap-2 rounded-lg border-0 bg-blue-600 px-6 text-sm font-medium shadow-sm hover:bg-blue-700"
                   onClick={() => handleEnterInterview(candidate.id)}
                 >
                   进入定制面试 <ArrowRightOutlined />

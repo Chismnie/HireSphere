@@ -58,7 +58,21 @@ const mockRadarData = [
 
 const TalentDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [jobFilter, setJobFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('default');
+
+  // Filter Logic
+  const filteredTalents = mockTalents
+    .filter((item) => {
+      if (jobFilter !== 'all' && item.position !== jobFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'time_desc') {
+        return new Date(b.interviewTime).getTime() - new Date(a.interviewTime).getTime();
+      }
+      return 0;
+    });
 
   const handleViewReport = (id: string) => {
     navigate(`/hr/talent/${id}`);
@@ -70,76 +84,88 @@ const TalentDashboard: React.FC = () => {
         {/* Left Content - List */}
         <Content className="mr-6 flex flex-col overflow-hidden">
           {/* Filter Bar */}
-          <div className="mb-6 flex gap-4">
+          <div className="mb-6 flex gap-4 px-2">
             <Select
               defaultValue="all"
               className="w-48 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300"
               variant="borderless"
               size="large"
-              options={[{ value: 'all', label: '所有简历' }]}
+              options={[
+                { value: 'all', label: '所有岗位' },
+                { value: '产品经理', label: '产品经理' },
+                { value: '前端开发', label: '前端开发' },
+                { value: 'Java后端', label: 'Java后端' },
+              ]}
+              onChange={setJobFilter}
             />
             <Select
               defaultValue="default"
               className="w-48 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300"
               variant="borderless"
               size="large"
-              options={[{ value: 'default', label: '排序' }]}
+              options={[
+                { value: 'default', label: '默认排序' },
+                { value: 'time_desc', label: '时间倒序' },
+              ]}
               onChange={setSortOrder}
             />
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto pb-10 space-y-4 pr-2">
-            {mockTalents.map((talent) => (
+          <Content className="space-y-4 overflow-y-auto px-2 pb-10">
+            {filteredTalents.map((talent) => (
               <div
                 key={talent.id}
-                className="grid grid-cols-[auto_1fr_auto] gap-6 items-center rounded-2xl border border-gray-300 bg-white/90 p-6 shadow-sm backdrop-blur-md transition-all hover:shadow-md"
+                className="flex items-center justify-between rounded-2xl border border-gray-300 bg-white/90 p-6 shadow-sm backdrop-blur-md transition-all hover:shadow-md"
               >
-                {/* Avatar */}
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-50 border border-gray-200">
-                  <UserOutlined className="text-3xl text-gray-600" />
-                </div>
+                {/* Left: Avatar & Info */}
+                <div className="flex items-center gap-6">
+                    {/* Avatar */}
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-50 border border-gray-300">
+                    <UserOutlined className="text-3xl text-gray-600" />
+                    </div>
 
-                {/* Info */}
-                <div className="flex flex-col gap-3 min-w-0">
-                  <div className="text-2xl font-bold tracking-wide text-gray-800">
-                    {talent.name}
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="rounded-full border border-gray-300 bg-cyan-50 px-4 py-1 text-sm font-medium text-cyan-700 whitespace-nowrap">
-                      职位 ({talent.position})
-                    </span>
-                    <span
-                      className={`rounded-full border border-gray-300 px-4 py-1 text-sm font-medium whitespace-nowrap ${
-                        talent.status === 'accepted'
-                          ? 'bg-lime-50 text-lime-700'
-                          : 'bg-red-50 text-red-700'
-                      }`}
-                    >
-                      {talent.status === 'accepted' ? '已录用' : '已淘汰'}
-                    </span>
-                    <span className="rounded-full border border-gray-300 bg-purple-50 px-4 py-1 text-sm font-medium text-purple-700 whitespace-nowrap">
-                      面试时间: {talent.interviewTime}
-                    </span>
-                  </div>
+                    {/* Info */}
+                    <div className="flex flex-col gap-2 min-w-0">
+                    <div className="text-2xl font-bold tracking-wide text-gray-800">
+                        {talent.name}
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                        <span className="rounded-full border border-gray-300 bg-cyan-50 px-4 py-1 text-sm font-medium text-cyan-700 whitespace-nowrap">
+                        职位 ({talent.position})
+                        </span>
+                        <span
+                        className={`rounded-full border border-gray-300 px-4 py-1 text-sm font-medium whitespace-nowrap ${
+                            talent.status === 'accepted'
+                            ? 'bg-lime-50 text-lime-700'
+                            : 'bg-red-50 text-red-700'
+                        }`}
+                        >
+                        {talent.status === 'accepted' ? '已录用' : '已淘汰'}
+                        </span>
+                        <span className="rounded-full border border-gray-300 bg-purple-50 px-4 py-1 text-sm font-medium text-purple-700 whitespace-nowrap">
+                        面试时间: {talent.interviewTime}
+                        </span>
+                    </div>
 
-                  <div className="text-sm text-gray-400">
-                    核心优势 (eg: {talent.tags.join('/')})
-                  </div>
+                    <div className="text-sm text-gray-400">
+                        核心优势 (eg: {talent.tags.join('/')})
+                    </div>
+                    </div>
                 </div>
 
                 {/* Action Button */}
                 <Button
                   type="primary"
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 h-10 text-sm font-medium shadow-sm hover:bg-blue-700 border-none ml-4 shrink-0"
+                  className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-medium shadow-sm hover:bg-blue-700 border-none shrink-0"
                   onClick={() => handleViewReport(talent.id)}
                 >
                   查看报告 <ArrowRightOutlined />
                 </Button>
               </div>
             ))}
-          </div>
+          </Content>
         </Content>
 
         {/* Right Sider - Analysis */}

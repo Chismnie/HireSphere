@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Avatar } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FileText,
   LayoutDashboard,
@@ -13,15 +13,27 @@ import useUserStore from '@/store/modules/user';
 import ResumeUpload from '@/components/ResumeUpload';
 import JobDashboard from './Interview/JobDashboard';
 import TalentDashboard from './Talent/TalentDashboard';
+import JobProfilePage from './JobProfile/JobProfilePage';
+import AccountSettingsPage from './Account/AccountSettingsPage';
 
 const HRDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { clearUserInfo } = useUserStore();
-  const [activeTab, setActiveTab] = useState<string>('resume');
+  const location = useLocation();
+  const { clearUserInfo, profile } = useUserStore();
+  const [activeTab, setActiveTab] = useState<string>(
+    (location.state as { activeTab?: string })?.activeTab || 'resume'
+  );
+
+  useEffect(() => {
+    const state = location.state as { activeTab?: string } | null;
+    if (state?.activeTab) {
+      setActiveTab(state.activeTab);
+    }
+  }, [location.state]);
 
   const handleLogout = () => {
     clearUserInfo();
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const menuItems = [
@@ -41,11 +53,9 @@ const HRDashboard: React.FC = () => {
       case 'talent':
         return <TalentDashboard />;
       case 'job-profile':
-        return (
-          <div className="p-8 text-gray-500">岗位画像设置功能开发中...</div>
-        );
+        return <JobProfilePage />;
       case 'account':
-        return <div className="p-8 text-gray-500">账号设置功能开发中...</div>;
+        return <AccountSettingsPage />;
       default:
         return <ResumeUpload />;
     }
@@ -103,9 +113,9 @@ const HRDashboard: React.FC = () => {
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-gray-900">
-                HR端
+                {profile.username}
               </p>
-              <p className="truncate text-xs text-gray-500">咕咕嘎嘎公司</p>
+              <p className="truncate text-xs text-gray-500">{profile.company}</p>
             </div>
           </div>
         </div>
@@ -132,7 +142,7 @@ const HRDashboard: React.FC = () => {
 
         {/* Content Area - Removed inner white container for Dashboard to allow transparent background flow */}
         <div className="flex-1 overflow-hidden p-8">
-          {activeTab === 'dashboard' || activeTab === 'talent' ? (
+          {activeTab === 'dashboard' || activeTab === 'talent' || activeTab === 'job-profile' ? (
             <div className="h-full w-full">{renderContent()}</div>
           ) : (
             <div className="h-full w-full overflow-hidden rounded-xl border border-gray-300 bg-white/80 shadow-sm backdrop-blur-sm">

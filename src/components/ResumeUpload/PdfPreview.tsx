@@ -11,7 +11,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 interface PdfPreviewProps {
-  file: File | null;
+  file: File | string | null;
 }
 
 const PdfPreview: React.FC<PdfPreviewProps> = ({ file }) => {
