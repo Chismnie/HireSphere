@@ -1,9 +1,4 @@
-export interface ResumeUploadResponse {
-  fileId: string;
-  fileName: string;
-  uploadTime: string;
-}
-
+// Seeker Resume Types
 export interface ResumeDiagnosisData {
   score: number;
   targetPosition: string;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Button, Avatar, Typography, Tag } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -16,6 +16,8 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from 'recharts';
+import PdfPreview from '@/components/ResumeUpload/PdfPreview';
+import { getResumeUrl } from '@/apis/HR/Resume';
 
 const { Header, Content } = Layout;
 const { Text, Title } = Typography;
@@ -32,6 +34,18 @@ const mockRadarData = [
 const TalentReportPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // In a real app, use this ID to fetch data
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      getResumeUrl(id).then((res: any) => {
+        if (res.code === 200 || res.code === 0) {
+          setResumeUrl(res.data.resume_url);
+        }
+      }).catch(console.error);
+    }
+  }, [id]);
+
   console.log('Viewing talent report for id:', id);
 
   return (
@@ -216,40 +230,14 @@ const TalentReportPage: React.FC = () => {
                         <FileTextOutlined />
                         <Title level={4} className="!mb-0">简历原文</Title>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6 bg-white">
-                        {/* Mock Resume Content */}
-                        <div className="space-y-4 text-sm text-gray-600">
-                            <div className="border-b border-gray-100 pb-2 mb-2">
-                                <div className="font-bold text-lg text-gray-900">基本信息</div>
-                                <div className="mt-2">姓名：张三</div>
-                                <div>邮箱：zhangsan@example.com</div>
-                                <div>电话：13800138000</div>
+                    <div className="flex-1 overflow-hidden bg-white relative">
+                        {resumeUrl ? (
+                             <PdfPreview file={resumeUrl} />
+                        ) : (
+                            <div className="flex h-full items-center justify-center text-gray-400">
+                                暂无简历预览
                             </div>
-                            
-                            <div className="border-b border-gray-100 pb-2 mb-2">
-                                <div className="font-bold text-lg text-gray-900">工作经历</div>
-                                <div className="mt-2 font-bold">某知名互联网公司 - 高级后端工程师</div>
-                                <div className="text-xs text-gray-400 mb-1">2020.07 - 至今</div>
-                                <ul className="list-disc pl-4 space-y-1">
-                                    <li>负责核心交易系统的架构设计与重构，将系统吞吐量提升了 200%。</li>
-                                    <li>主导微服务拆分，降低了系统耦合度，提升了开发效率。</li>
-                                    <li>优化数据库查询性能，将平均响应时间从 500ms 降低至 50ms。</li>
-                                </ul>
-                            </div>
-
-                            <div className="border-b border-gray-100 pb-2 mb-2">
-                                <div className="font-bold text-lg text-gray-900">教育背景</div>
-                                <div className="mt-2 font-bold">某985大学 - 计算机科学与技术 (硕士)</div>
-                                <div className="text-xs text-gray-400">2017.09 - 2020.06</div>
-                            </div>
-
-                            <div>
-                                <div className="font-bold text-lg text-gray-900">技能清单</div>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    <Tag>Java</Tag> <Tag>Spring Boot</Tag> <Tag>MySQL</Tag> <Tag>Redis</Tag> <Tag>Kubernetes</Tag>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 

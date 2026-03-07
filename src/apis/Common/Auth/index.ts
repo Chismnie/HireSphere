@@ -1,10 +1,12 @@
 import { request } from '@/utils/request';
-import type { ApiResponse } from '../types';
+import type { ApiResponse } from '@/apis/types';
 import type { LoginParams, UserInfo } from './type';
+
+export * from './type';
 
 export const login = (data: LoginParams) => {
   return request({
-    url: '/auth/login',
+    url: '/api/v1/user/login',
     method: 'POST',
     data,
   }) as Promise<ApiResponse<UserInfo>>;

@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from "react";
-import { createBrowserRouter, redirect } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { Spin } from "antd";
 import Welcome from "../view/Welcome/index"; // 首屏保持静态引入，优化 LCP
 import AuthGuard from "../components/AuthGuard";
@@ -11,6 +11,7 @@ const Seeker = lazy(() => import("../view/Seeker/index"));
 const HRDashboard = lazy(() => import("../view/HR/index"));
 const InterviewPage = lazy(() => import('../view/HR/Interview/InterviewPage'));
 const TalentReportPage = lazy(() => import('../view/HR/Talent/TalentReportPage'));
+const InterviewRoom = lazy(() => import('../view/InterviewRoom/index'));
 const Forbidden = lazy(() => import("../view/Error/403"));
 
 // 懒加载包裹组件
@@ -26,12 +27,12 @@ const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
   </Suspense>
 );
 
-// 受保护路由的 loader：没有 token 就去 /login
+// 受保护路由的 loader：临时关闭检查
 const authLoader = () => {
-  const { token } = useUserStore.getState();
-  if (!token) {
-    return redirect("/");
-  }
+  // const { token } = useUserStore.getState();
+  // if (!token) {
+  //   return redirect("/");
+  // }
   return null;
 };
 
@@ -55,6 +56,14 @@ const routers = [
     element: (
       <LazyWrapper>
         <Login />
+      </LazyWrapper>
+    ),
+  },
+  {
+    path: '/interview-room',
+    element: (
+      <LazyWrapper>
+        <InterviewRoom />
       </LazyWrapper>
     ),
   },

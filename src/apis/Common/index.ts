@@ -1,5 +1,5 @@
 import { request, fetchReader } from '@/utils/request';
-import type { ApiResponse } from '../types';
+import type { ApiResponse } from '@/apis/types';
 
 export const uploadImage = (file: File) => {
   const formData = new FormData();

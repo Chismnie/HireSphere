@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Select, Button } from 'antd';
 import {
   UserOutlined,
@@ -16,37 +16,20 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from 'recharts';
+import { getInterviewedTalents } from '@/apis/HR/Talent';
 
 const { Content, Sider } = Layout;
 
-// Mock Data for Talent Pool
-const mockTalents = [
-  {
-    id: '1',
-    name: '张三',
-    position: '产品经理',
-    status: 'accepted', // accepted, rejected
-    interviewTime: '2023-10-24',
-    tags: ['985毕业', '大厂实习经验', '多年工作经验'],
-  },
-  {
-    id: '2',
-    name: '李四',
-    position: '前端开发',
-    status: 'accepted',
-    interviewTime: '2023-10-25',
-    tags: ['985毕业', '大厂实习经验', '多年工作经验'],
-  },
-  {
-    id: '3',
-    name: '王五',
-    position: 'Java后端',
-    status: 'rejected',
-    interviewTime: '2023-10-26',
-    tags: ['985毕业', '大厂实习经验', '多年工作经验'],
-  },
-];
+interface Talent {
+  id: string;
+  name: string;
+  position: string;
+  status: string;
+  interviewTime: string;
+  tags: string[];
+}
 
+// Mock Radar Data (Static for now as API doesn't provide it yet)
 const mockRadarData = [
   { subject: '技术深度', A: 120, fullMark: 150 },
   { subject: '沟通逻辑', A: 98, fullMark: 150 },
@@ -60,9 +43,39 @@ const TalentDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('default');
+  const [talents, setTalents] = useState<Talent[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res: any = await getInterviewedTalents();
+        if (res.code === 200 || res.code === 0) {
+            const list = res.data?.list || [];
+            const mapped = list.map((item: any) => {
+                let status = 'pending';
+                if (item.hire_status === '已录用' || item.hire_status === 'accepted') status = 'accepted';
+                if (item.hire_status === '已淘汰' || item.hire_status === 'rejected') status = 'rejected';
+                
+                return {
+                    id: item.talent_id,
+                    name: item.full_name,
+                    position: item.target_position,
+                    status: status,
+                    interviewTime: item.interview_time ? new Date(item.interview_time).toLocaleDateString() : 'N/A',
+                    tags: item.core_advantages ? item.core_advantages.split(/,|，/) : [],
+                };
+            });
+            setTalents(mapped);
+        }
+      } catch (error) {
+        console.error('Failed to fetch interviewed talents:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Filter Logic
-  const filteredTalents = mockTalents
+  const filteredTalents = talents
     .filter((item) => {
       if (jobFilter !== 'all' && item.position !== jobFilter) return false;
       return true;
@@ -113,7 +126,12 @@ const TalentDashboard: React.FC = () => {
 
           {/* List */}
           <Content className="space-y-4 overflow-y-auto px-2 pb-10">
-            {filteredTalents.map((talent) => (
+            {filteredTalents.length === 0 ? (
+                <div className="flex h-64 w-full items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white/50">
+                    <span className="text-gray-400 text-lg">暂无相关人才数据，请稍后重试或检查筛选条件</span>
+                </div>
+            ) : (
+                filteredTalents.map((talent) => (
               <div
                 key={talent.id}
                 className="flex items-center justify-between rounded-2xl border border-gray-300 bg-white/90 p-6 shadow-sm backdrop-blur-md transition-all hover:shadow-md"
@@ -164,7 +182,7 @@ const TalentDashboard: React.FC = () => {
                   查看报告 <ArrowRightOutlined />
                 </Button>
               </div>
-            ))}
+            )))}
           </Content>
         </Content>
 

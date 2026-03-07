@@ -8,16 +8,7 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ allowedRoles, children }) => {
-  const { token, role } = useUserStore();
-
-  if (!token) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
-    return <Navigate to="/403" replace />;
-  }
-
+  // 临时关闭路由守卫，直接放行
   return <>{children || <Outlet />}</>;
 };
 

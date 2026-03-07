@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, Alert, Typography, Card } from 'antd';
 import {
   Radar,
@@ -12,6 +12,8 @@ import { pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { FileTextOutlined, BulbOutlined } from '@ant-design/icons';
+import PdfPreview from '@/components/ResumeUpload/PdfPreview';
+import { getResumeUrl } from '@/apis/HR/Resume';
 
 // Set worker for react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -30,10 +32,30 @@ const mockRadarData = [
   { subject: '学习潜力', A: 65, fullMark: 150 },
 ];
 
-const InterviewContextPanel: React.FC = () => {
+interface InterviewContextPanelProps {
+  talentId?: string;
+}
+
+const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId }) => {
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (talentId) {
+      getResumeUrl(talentId).then((res: any) => {
+        if (res.code === 200 || res.code === 0) {
+          setResumeUrl(res.data.resume_url);
+        }
+      }).catch(console.error);
+    }
+  }, [talentId]);
+
   const ResumeTab = () => (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-300 bg-gray-50/50">
-      {/* Placeholder for PDF - In a real app, this would be a URL */}
+      {resumeUrl ? (
+        <div className="flex-1 overflow-hidden relative">
+             <PdfPreview file={resumeUrl} />
+        </div>
+      ) : (
       <div className="flex flex-1 flex-col items-center justify-center p-8">
         <div className="mb-4 rounded-full bg-white p-8 shadow-sm border border-gray-300">
           <FileTextOutlined className="text-4xl text-blue-200" />
@@ -41,10 +63,8 @@ const InterviewContextPanel: React.FC = () => {
         <Text type="secondary" className="text-gray-400">
           暂无简历预览
         </Text>
-        <Text className="mt-2 text-xs text-gray-300">
-          （此处应集成 react-pdf 渲染真实 PDF）
-        </Text>
       </div>
+      )}
     </div>
   );
 

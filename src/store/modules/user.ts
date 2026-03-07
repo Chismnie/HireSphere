@@ -15,6 +15,7 @@ interface StoreType {
   role: UserRole | null;
   profile: UserProfile;
   setUserInfo: (info: { token: string; role: UserRole }) => void;
+  setId: (id: string) => void;
   updateProfile: (profile: Partial<UserProfile>) => void;
   clearUserInfo: () => void;
 }
@@ -29,6 +30,7 @@ const useUserStore = create<StoreType>((set) => ({
     email: localStorage.getItem("email") || "",
     phone: localStorage.getItem("phone") || "",
   },
+  setId: (id) => set({ id }),
   setUserInfo: ({ token, role }) => {
     set({ token, role });
     localStorage.setItem("token", token);

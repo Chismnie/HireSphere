@@ -1,15 +1,18 @@
-import React from 'react';
-import { Button, Typography } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Button, Typography, Input, Modal, message } from 'antd';
 import {
   CheckCircleOutlined,
   WarningOutlined,
   ThunderboltOutlined,
   RightOutlined,
   EditOutlined,
-  FileSearchOutlined
+  FileSearchOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import PdfPreview from '@/components/ResumeUpload/PdfPreview';
+import useUserStore from '@/store/modules/user';
+import { getResumeUrl } from '@/apis/HR/Resume';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -42,10 +45,51 @@ const mockResumeFile = null;
 
 const ResumeDiagnosis: React.FC = () => {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [interviewLink, setInterviewLink] = useState('');
+
+  const { id } = useUserStore();
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // For demo, if no ID, use '1'
+    const talentId = id || '1';
+    if (talentId) {
+      getResumeUrl(talentId).then((res: any) => {
+        if (res.code === 200 || res.code === 0) {
+          setResumeUrl(res.data.resume_url);
+        }
+      }).catch(console.error);
+    }
+  }, [id]);
 
   const handleEnterMockInterview = () => {
-    // Navigate to the Interview tab via state
-    navigate('/home', { state: { activeTab: 'interview' } });
+    setIsModalOpen(true);
+  };
+
+  const handleStartInterview = () => {
+    if (!interviewLink.trim()) {
+        message.warning('请输入面试链接');
+        return;
+    }
+
+    try {
+        const url = new URL(interviewLink);
+        const roomId = url.searchParams.get('roomId');
+        const token = url.searchParams.get('token');
+
+        if (!roomId || !token) {
+            message.error('无效的面试链接，请检查');
+            return;
+        }
+
+        // 跳转到面试间
+        window.open(`/interview-room?roomId=${roomId}&token=${token}`, '_blank');
+        setIsModalOpen(false);
+        setInterviewLink('');
+    } catch (e) {
+        message.error('链接格式错误');
+    }
   };
 
   return (
@@ -154,7 +198,7 @@ const ResumeDiagnosis: React.FC = () => {
         </div>
         
         <div className="flex-1 overflow-hidden bg-gray-100 relative">
-          <PdfPreview file={mockResumeFile} />
+          <PdfPreview file={resumeUrl} />
           
           {/* Overlay Button at Bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white/90 to-transparent">
@@ -165,11 +209,36 @@ const ResumeDiagnosis: React.FC = () => {
               className="h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 shadow-lg border-none flex items-center justify-center gap-2"
               onClick={handleEnterMockInterview}
             >
-              一键进入模拟面试 <RightOutlined />
+              一键进入面试 <RightOutlined />
             </Button>
           </div>
         </div>
       </div>
+
+      <Modal
+        title={
+            <div className="flex items-center gap-2 text-blue-600">
+                <LinkOutlined /> 进入面试间
+            </div>
+        }
+        open={isModalOpen}
+        onOk={handleStartInterview}
+        onCancel={() => setIsModalOpen(false)}
+        okText="进入面试"
+        cancelText="取消"
+        centered
+      >
+        <div className="py-6">
+            <p className="text-gray-600 mb-2">请输入 HR 提供的面试链接：</p>
+            <Input 
+                placeholder="例如：http://hiresphere.com/interview-room?roomId=..." 
+                value={interviewLink} 
+                onChange={e => setInterviewLink(e.target.value)} 
+                onPressEnter={handleStartInterview}
+                size="large"
+            />
+        </div>
+      </Modal>
     </div>
   );
 };

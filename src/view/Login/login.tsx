@@ -4,29 +4,52 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { UserOutlined, TeamOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import useUserStore from '@/store/modules/user';
 
+import { login } from '@/apis/Common/Auth';
+
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation() as { state?: { preselect?: 'seeker' | 'hr' } };
   const [activeTab, setActiveTab] = useState<string>(location.state?.preselect ?? 'seeker');
   const [isRegister, setIsRegister] = useState(false);
   const { setUserInfo } = useUserStore();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleSubmit = () => {
-    // 模拟登录/注册逻辑
-    const mockToken = 'mock-token-' + Math.random().toString(36).substr(2);
-    
-    if (isRegister) {
-      message.success('注册成功，已自动登录');
-    } else {
-      message.success('登录成功');
-    }
+  const handleSubmit = async () => {
+    try {
+      if (isRegister) {
+      
+        message.info('注册功能暂未开放，请直接登录');
+        return;
+      }
 
-    if (activeTab === 'seeker') {
-      setUserInfo({ token: mockToken, role: 'seeker' });
-      navigate('/home', { replace: true });
-    } else {
-      setUserInfo({ token: mockToken, role: 'hr' });
-      navigate('/hr', { replace: true });
+      const res: any = await login({
+        email,
+        password,
+        type: activeTab as 'seeker' | 'hr',
+      });
+
+      if (res.code === 200 || res.code === 0) {
+        message.success('登录成功');
+        const { token, username, email: userEmail } = res.data;
+        
+        // 存储更多用户信息
+        // 注意：useUserStore 的类型定义可能需要更新以支持存储 email
+        setUserInfo({ token, role: activeTab as 'seeker' | 'hr' });
+        
+        console.log('Logged in as:', username, userEmail);
+
+        if (activeTab === 'seeker') {
+          navigate('/home', { replace: true });
+        } else {
+          navigate('/hr', { replace: true });
+        }
+      } else {
+        message.error(res.message || '登录失败');
+      }
+    } catch (error) {
+      console.error(error);
+      message.error('登录请求失败');
     }
   };
 
@@ -35,23 +58,19 @@ const Login: React.FC = () => {
       <div className="flex flex-col gap-4">
         <Input 
           size="large" 
-          placeholder="用户名" 
-          prefix={<UserOutlined className="text-gray-400" />} 
+          placeholder="邮箱" 
+          prefix={<MailOutlined className="text-gray-400" />} 
           className="rounded-lg"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
         />
-        {isRegister && (
-            <Input 
-              size="large" 
-              placeholder="邮箱" 
-              prefix={<MailOutlined className="text-gray-400" />} 
-              className="rounded-lg"
-            />
-        )}
         <Input.Password 
           size="large" 
           placeholder="密码" 
           prefix={<LockOutlined className="text-gray-400" />} 
           className="rounded-lg"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
         />
         {isRegister && (
           <Input.Password 

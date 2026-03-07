@@ -1,6 +1,5 @@
-//utils.js
 import axios from 'axios';
-const baseURL = 'http://yanmengsss.xyz:3005';
+const baseURL = 'http://frp-ski.com:46285';
 axios.defaults.baseURL = baseURL;
 
 interface QueueItem {
@@ -39,8 +38,13 @@ class RequestQueue {
     try {
       const response = await axiosInstance(queueItem.options);
       queueItem.resolve(response.data);
-    } catch (error) {
-      queueItem.reject(error);
+    } catch (error: any) {
+        // Fast fail for connection errors
+        if (error.code === 'ECONNABORTED' || error.message.includes('Network Error')) {
+            queueItem.reject(new Error('无法连接到服务器，请检查网络或稍后重试'));
+        } else {
+            queueItem.reject(error);
+        }
     } finally {
       this.activeCount--;
       this.processNextRequest();
@@ -50,8 +54,13 @@ class RequestQueue {
     try {
       const response = await axiosInstance(queueItem.options);
       queueItem.resolve(response.data);
-    } catch (error) {
-      queueItem.reject(error);
+    } catch (error: any) {
+        // Fast fail for connection errors
+        if (error.code === 'ECONNABORTED' || error.message.includes('Network Error')) {
+            queueItem.reject(new Error('无法连接到服务器，请检查网络或稍后重试'));
+        } else {
+            queueItem.reject(error);
+        }
     } finally {
       this.processNextRequest();
     }
@@ -73,7 +82,7 @@ class RequestQueue {
 }
 
 const axiosInstance = axios.create({
-  timeout: 5 * 1000, // 请求超时时间（5秒）
+  timeout: 3 * 1000, // Reduced timeout to 3s for faster failure feedback
 });
 
 const requestQueue = new RequestQueue();

@@ -15,43 +15,25 @@ import FileLoading from './FileLoading';
 
 const { Dragger } = Upload;
 
+import { uploadResume } from '@/apis/Common/Resume';
+
 interface UploadedFileItem {
   id: string;
   file: File;
   status: 'uploading' | 'analyzing' | 'completed' | 'failed';
-  result?: string;
-  taskId?: string;
+  result?: any;
 }
 
-// 模拟 API
-const mockUploadAPI = (_file: File) => {
-  return new Promise<{ taskId: string }>((resolve) => {
-    setTimeout(() => {
-      resolve({ taskId: `task-${Date.now()}-${Math.random()}` });
-    }, 1500);
-  });
-};
-
-const mockAnalysisResult = ``;
+import useUserStore from '@/store/modules/user';
 
 const ResumeUpload: React.FC = () => {
+  const { setId } = useUserStore();
   const [fileList, setFileList] = useState<UploadedFileItem[]>([]);
   const [viewMode, setViewMode] = useState<'upload' | 'loading' | 'list'>(
     'upload'
   );
   const [previewItem, setPreviewItem] = useState<UploadedFileItem | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
-  // 轮询定时器管理
-  const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-
-  // 清理所有定时器
-  useEffect(() => {
-    return () => {
-      timersRef.current.forEach((timer) => clearInterval(timer));
-      timersRef.current.clear();
-    };
-  }, []);
 
   // 监听文件列表状态，自动切换视图
   useEffect(() => {
@@ -70,17 +52,6 @@ const ResumeUpload: React.FC = () => {
     }
   }, [fileList]);
 
-  const startPolling = (_taskId: string, fileId: string) => {
-    // 直接标记为完成（后续接入真实解析后再恢复轮询逻辑）
-    setFileList((prev) =>
-      prev.map((item) =>
-        item.id === fileId
-          ? { ...item, status: 'completed', result: '解析完成' }
-          : item
-      )
-    );
-  };
-
   const handleUploadFiles = async (files: File[]) => {
     // 初始化文件列表项
     const newItems: UploadedFileItem[] = files.map((file) => ({
@@ -95,15 +66,25 @@ const ResumeUpload: React.FC = () => {
     // 并发上传
     for (const item of newItems) {
       try {
-        const { taskId } = await mockUploadAPI(item.file);
-        // 更新 item 的 taskId 并开始轮询
-        setFileList((prev) =>
-          prev.map((prevItem) =>
-            prevItem.id === item.id ? { ...prevItem, taskId } : prevItem
-          )
-        );
-        startPolling(taskId, item.id);
+        const res = await uploadResume(item.file);
+        // @ts-ignore
+        if (res.code === 200 || res.code === 0) {
+            setId(res.data.talent_id); // Save talent ID
+             setFileList((prev) =>
+              prev.map((prevItem) =>
+                prevItem.id === item.id
+                  ? { ...prevItem, status: 'completed', result: res.data }
+                  : prevItem
+              )
+            );
+            message.success(`${item.file.name} 上传成功`);
+        } else {
+            throw new Error(res.message || 'Upload failed');
+        }
+       
       } catch (error) {
+        console.error(error);
+        message.error(`${item.file.name} 上传失败`);
         setFileList((prev) =>
           prev.map((prevItem) =>
             prevItem.id === item.id
@@ -152,11 +133,6 @@ const ResumeUpload: React.FC = () => {
 
   const handleDelete = (id: string) => {
     setFileList((prev) => prev.filter((item) => item.id !== id));
-    // 清理该文件的定时器
-    if (timersRef.current.has(id)) {
-      clearInterval(timersRef.current.get(id)!);
-      timersRef.current.delete(id);
-    }
   };
 
   const handlePreview = (item: UploadedFileItem) => {

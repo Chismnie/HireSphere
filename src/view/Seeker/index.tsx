@@ -9,6 +9,8 @@ import {
   TrendingUp,
   UserCog,
 } from 'lucide-react';
+import { Modal, Input, message } from 'antd';
+import { LinkOutlined } from '@ant-design/icons';
 import useUserStore from '@/store/modules/user';
 import ResumeUpload from '@/components/ResumeUpload';
 import AccountSettingsPage from '../HR/Account/AccountSettingsPage';
@@ -23,6 +25,32 @@ const SeekerDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(
     (location.state as { activeTab?: string })?.activeTab || 'resume'
   );
+  const [isInterviewModalOpen, setIsInterviewModalOpen] = useState(false);
+  const [interviewLink, setInterviewLink] = useState('');
+
+  const handleStartInterview = () => {
+    if (!interviewLink.trim()) {
+      message.warning('请输入面试链接');
+      return;
+    }
+
+    try {
+      const url = new URL(interviewLink);
+      const roomId = url.searchParams.get('roomId');
+      const token = url.searchParams.get('token');
+
+      if (!roomId || !token) {
+        message.error('无效的面试链接，请检查');
+        return;
+      }
+
+      window.open(`/interview-room?roomId=${roomId}&token=${token}`, '_blank');
+      setIsInterviewModalOpen(false);
+      setInterviewLink('');
+    } catch (e) {
+      message.error('链接格式错误');
+    }
+  };
 
   useEffect(() => {
     const state = location.state as { activeTab?: string } | null;
@@ -39,7 +67,7 @@ const SeekerDashboard: React.FC = () => {
   const menuItems = [
     { id: 'resume', label: '上传 / 更新简历', icon: FileText },
     { id: 'diagnosis', label: '简历深度诊断', icon: FileSearch },
-    { id: 'interview', label: '模拟面试训练', icon: MessageSquare },
+    { id: 'mock', label: '模拟面试训练', icon: MessageSquare },
     { id: 'growth', label: '训练与成长轨迹', icon: TrendingUp },
     { id: 'account', label: '账号设置', icon: UserCog },
   ];
@@ -50,7 +78,7 @@ const SeekerDashboard: React.FC = () => {
         return <ResumeUpload />;
       case 'diagnosis':
         return <ResumeDiagnosis />;
-      case 'interview':
+      case 'mock':
         return <MockInterview />;
       case 'growth':
         return <GrowthTrack />;
@@ -59,6 +87,10 @@ const SeekerDashboard: React.FC = () => {
       default:
         return <ResumeUpload />;
     }
+  };
+
+  const handleTabClick = (id: string) => {
+    setActiveTab(id);
   };
 
   return (
@@ -87,7 +119,7 @@ const SeekerDashboard: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleTabClick(item.id)}
                 className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 border ${
                   isActive
                     ? 'border-gray-300 bg-blue-50 text-blue-600 shadow-sm'
@@ -163,6 +195,31 @@ const SeekerDashboard: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-blue-600">
+            <LinkOutlined /> 进入面试间
+          </div>
+        }
+        open={isInterviewModalOpen}
+        onOk={handleStartInterview}
+        onCancel={() => setIsInterviewModalOpen(false)}
+        okText="进入面试"
+        cancelText="取消"
+        centered
+      >
+        <div className="py-6">
+          <p className="text-gray-600 mb-2">请输入 HR 提供的面试链接：</p>
+          <Input 
+            placeholder="例如：http://hiresphere.com/interview-room?roomId=..." 
+            value={interviewLink} 
+            onChange={e => setInterviewLink(e.target.value)} 
+            onPressEnter={handleStartInterview}
+            size="large"
+          />
+        </div>
+      </Modal>
     </div>
   );
 };
