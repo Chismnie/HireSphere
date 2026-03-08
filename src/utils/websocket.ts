@@ -21,44 +21,69 @@ class InterviewWebSocket {
   private messageListeners: Listener[] = [];
   private statusListeners: StatusListener[] = [];
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectCount = 0;
+  private readonly maxReconnects = 5;
 
   constructor(url: string) {
     this.url = url;
   }
 
-  connect(token: string) {
+  async connect(token: string, roomId: string, role: 'hr' | 'seeker') {
+    if (!token || token === 'undefined' || token === 'null') {
+        console.error('WS 连接失败: 无效的 Token');
+        this.notifyStatus('disconnected');
+        return;
+    }
+
     if (this.ws) {
-      this.ws.close();
+        if (this.ws.readyState === WebSocket.OPEN) {
+            console.log('WS 已经是连接状态，跳过重复连接');
+            return;
+        }
+        if (this.ws.readyState === WebSocket.CONNECTING) {
+            console.log('WS 正在连接中，跳过重复连接');
+            return;
+        }
+        this.ws.close();
+    }
+    
+    if (!this.reconnectTimer) {
+       this.reconnectCount = 0;
     }
 
     try {
-      // 连接到真实的 WebSocket 服务器
-      const wsUrl = `ws://localhost:8080/api/v1/interview/ws/join?token=${token}`;
-      console.log(`正在连接到 ${wsUrl}...`);
       this.notifyStatus('connecting');
+      
+      const wsUrl = `wss://frp-ski.com:46285/api/v1/interview/ws/join?token=${token}&room_id=${roomId}`;
+
+      console.log('WS 连接信息:', { wsUrl, token, roomId, role });
       
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('WS 已连接');
         this.notifyStatus('connected');
-        // 连接成功后清除重连定时器
+        this.reconnectCount = 0; 
         if (this.reconnectTimer) {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
+        
+        this.ws?.send(JSON.stringify({
+            type: 'join'
+        }));
       };
 
       this.ws.onmessage = (event) => {
         try {
           const rawData = JSON.parse(event.data);
-          // 将后端消息格式适配为前端 ChatMessage
+          console.log('WS message', rawData);
           
           if (rawData.type === 'chat') {
               const msg: ChatMessage = {
-                  id: Date.now().toString() + Math.random().toString(), // 如果未提供则生成 ID
-                  sender: 'other', // 将由 UI 根据当前用户角色调整
-                  name: rawData.from === 'hr' ? '面试官' : '候选人', // 简单映射
+                  id: Date.now().toString() + Math.random().toString(),
+                  sender: 'other',
+                  name: rawData.from === 'hr' ? '面试官' : '候选人',
                   role: rawData.from === 'hr' ? 'HR' : 'Seeker',
                   content: rawData.data.text,
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -71,12 +96,22 @@ class InterviewWebSocket {
         }
       };
 
-      this.ws.onclose = () => {
-        console.log('WS 已关闭');
+      this.ws.onclose = (event) => {
+        console.log(`WS 连接关闭: code=${event.code}, reason=${event.reason}, wasClean=${event.wasClean}`);
         this.notifyStatus('disconnected');
         this.ws = null;
-        // 自动重连
-        this.scheduleReconnect(token);
+
+        if (event.code === 1008 || (event.code >= 4000 && event.code < 5000)) {
+            console.error('WS 认证失败或策略违规，停止重连');
+            return;
+        }
+        
+        if (event.code === 1000) {
+            console.log('WS 正常关闭，不重连');
+            return;
+        }
+
+        this.scheduleReconnect(token, roomId, role);
       };
 
       this.ws.onerror = (error) => {
@@ -85,21 +120,21 @@ class InterviewWebSocket {
       };
 
     } catch (error) {
-      console.error('WS 连接错误:', error);
+      console.error('WS 连接创建异常:', error);
       this.notifyStatus('disconnected');
-      this.scheduleReconnect(token);
+      this.scheduleReconnect(token, roomId, role);
     }
   }
 
-  send(content: string) {
+  send(content: string, roomId?: string, role: 'hr' | 'seeker' = 'hr') {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      // 后端期望格式: { type: "chat", data: { text: "..." } }
-      // room_id 通常从连接会话/token 中推断
       const payload = {
           type: 'chat',
           data: {
-              text: content
-          }
+              text: content,
+              room_id: roomId
+          },
+          from: role
       };
       this.ws.send(JSON.stringify(payload));
     } else {
@@ -142,13 +177,20 @@ class InterviewWebSocket {
     this.statusListeners.forEach(l => l(status));
   }
 
-  private scheduleReconnect(token: string) {
+  private scheduleReconnect(token: string, roomId: string, role: 'hr' | 'seeker') {
+    if (this.reconnectCount >= this.maxReconnects) {
+      console.error('WS 重连失败次数过多，停止重连');
+      this.notifyStatus('disconnected');
+      return;
+    }
+
     if (!this.reconnectTimer) {
+      this.reconnectCount++;
       this.reconnectTimer = setTimeout(() => {
-        console.log('正在尝试重连...');
-        this.connect(token);
+        console.log(`正在尝试重连 (${this.reconnectCount}/${this.maxReconnects})...`);
+        this.connect(token, roomId, role);
         this.reconnectTimer = null;
-      }, 3000); // 3秒后重连
+      }, 3000);
     }
   }
 }

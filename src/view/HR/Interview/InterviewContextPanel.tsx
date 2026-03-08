@@ -38,22 +38,42 @@ interface InterviewContextPanelProps {
 
 const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId }) => {
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (talentId) {
+      setLoading(true);
       getResumeUrl(talentId).then((res: any) => {
         if (res.code === 200 || res.code === 0) {
           setResumeUrl(res.data.resume_url);
         }
-      }).catch(console.error);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
     }
   }, [talentId]);
 
   const ResumeTab = () => (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-300 bg-gray-50/50">
-      {resumeUrl ? (
-        <div className="flex-1 overflow-hidden relative">
-             <PdfPreview file={resumeUrl} />
+      {loading ? (
+          <div className="flex flex-1 flex-col items-center justify-center p-8">
+            <div className="mb-4 rounded-full bg-white p-6 shadow-sm border border-gray-300 animate-pulse">
+               <div className="h-8 w-8 bg-gray-200 rounded"></div>
+            </div>
+            <Text type="secondary" className="text-gray-400">正在加载简历...</Text>
+          </div>
+      ) : resumeUrl ? (
+        <div className="flex-1 overflow-hidden relative bg-white">
+             {/* 检查文件扩展名，决定渲染方式 */}
+             {resumeUrl.toLowerCase().includes('.pdf') ? (
+                 <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+                    <PdfPreview file={resumeUrl} />
+                 </div>
+             ) : (
+                 <div className="absolute inset-0 overflow-y-auto custom-scrollbar flex items-start justify-center p-4">
+                     <img src={resumeUrl} alt="Resume" className="max-w-full shadow-md rounded" />
+                 </div>
+             )}
         </div>
       ) : (
       <div className="flex flex-1 flex-col items-center justify-center p-8">
@@ -69,7 +89,7 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
   );
 
   const AIInsightTab = () => (
-    <div className="custom-scrollbar h-full space-y-6 overflow-y-auto p-1 pr-2 pb-10">
+    <div className="h-full space-y-6 overflow-y-auto p-1 pr-2 pb-10 custom-scrollbar">
       {/* Risk Alert Section */}
       <div className="space-y-3">
         <div className="text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -148,38 +168,41 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
     </div>
   );
 
-  const items = [
-    {
-      key: 'resume',
-      label: (
-        <span className="flex items-center gap-2 px-2">
-          <FileTextOutlined /> 应聘简历
-        </span>
-      ),
-      children: <ResumeTab />,
-    },
-    {
-      key: 'insight',
-      label: (
-        <span className="flex items-center gap-2 px-2">
-          <BulbOutlined /> AI 洞察
-        </span>
-      ),
-      children: <AIInsightTab />,
-    },
-  ];
-
   return (
-    <div className="flex h-full flex-col bg-transparent">
-      <div className="flex flex-1 flex-col overflow-hidden px-6 pb-6 pt-2">
-        <Tabs
-          defaultActiveKey="insight"
-          items={items}
-          className="flex h-full flex-col [&>.ant-tabs-content-holder]:flex-1 [&>.ant-tabs-content-holder]:min-h-0 [&>.ant-tabs-content-holder]:overflow-hidden [&_.ant-tabs-content]:h-full [&_.ant-tabs-tabpane]:h-full"
-          size="large"
-          tabBarStyle={{ marginBottom: 24, borderBottom: '1px solid #d1d5db' }}
-        />
-      </div>
+    <div className="flex h-full flex-col bg-white p-4 overflow-hidden">
+      <Tabs
+        defaultActiveKey="1"
+        className="h-full flex flex-col full-height-tabs"
+        items={[
+          {
+            key: '1',
+            label: (
+              <span className="flex items-center gap-2 px-1">
+                <FileTextOutlined />
+                应聘简历
+              </span>
+            ),
+            children: <div className="h-full overflow-hidden"><ResumeTab /></div>,
+          },
+          {
+            key: '2',
+            label: (
+              <span className="flex items-center gap-2 px-1">
+                <BulbOutlined />
+                AI 洞察
+              </span>
+            ),
+            children: <div className="h-full overflow-hidden flex flex-col"><AIInsightTab /></div>,
+          },
+        ]}
+        // 确保 Tab 内容区域占满剩余高度
+        renderTabBar={(props, DefaultTabBar) => (
+            <div className="mb-2 flex-shrink-0">
+                <DefaultTabBar {...props} />
+            </div>
+        )}
+        style={{ height: '100%' }}
+      />
     </div>
   );
 };

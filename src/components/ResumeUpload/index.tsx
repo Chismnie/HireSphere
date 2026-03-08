@@ -16,6 +16,21 @@ import FileLoading from './FileLoading';
 const { Dragger } = Upload;
 
 import { uploadResume } from '@/apis/Common/Resume';
+import { getAllTalents } from '@/apis/HR/Talent'; // Import getAllTalents to refresh dashboard if needed
+// However, ResumeUpload is usually in a separate page/modal.
+// The prompt says "update seeker info in interview dashboard".
+// This likely means ResumeUpload should trigger a refresh in JobDashboard OR 
+// we should update the local state/cache that JobDashboard uses.
+// Since they are separate components, we can use a global store or event bus.
+// For now, let's verify if JobDashboard automatically fetches data.
+// JobDashboard fetches data on mount.
+// If ResumeUpload is done, the user might navigate to JobDashboard.
+// The user input implies that AFTER upload, the info should be displayed.
+// This is already handled if JobDashboard fetches `getAllTalents` which includes the new resume.
+// Let's check `getAllTalents` in `src/view/HR/Interview/JobDashboard.tsx`.
+// It calls `getAllTalents`.
+// So if `uploadResume` successfully saves to backend, `getAllTalents` should return it.
+// The missing piece might be notifying the user or redirecting.
 
 interface UploadedFileItem {
   id: string;
@@ -78,6 +93,18 @@ const ResumeUpload: React.FC = () => {
               )
             );
             message.success(`${item.file.name} 上传成功`);
+            
+            // Add: Prompt user to view in dashboard
+            Modal.success({
+                title: '简历解析成功',
+                content: `候选人 ${res.data.full_name} 的简历已上传并解析，匹配岗位：${res.data.target_position}。`,
+                okText: '去面试看板查看',
+                onOk: () => {
+                    // Navigate to dashboard
+                    window.location.href = '/hr'; // Or use useNavigate if available
+                }
+            });
+
         } else {
             throw new Error(res.message || 'Upload failed');
         }

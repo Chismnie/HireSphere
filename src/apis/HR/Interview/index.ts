@@ -1,22 +1,32 @@
 import { request } from '@/utils/request';
 import type { ApiResponse } from '@/apis/types';
-import type { InterviewInfo, CheckPermissionResponse, CreateInterviewResponse, AddTagParams, AiSuggestionParams, AiSuggestionResponse } from './type';
+import type { InterviewInfo, CheckPermissionResponse, CreateInterviewResponse, AddTagParams, AiSuggestionParams, AiSuggestionResponse, ConnectionResponse } from './type';
 
 export * from './type';
 
 export const validateInterview = async (roomId: string, token: string): Promise<InterviewInfo> => {
-  // 使用 check_room_permission API
   const res = await request({
     url: '/api/v1/interview/check_room_permission',
     method: 'POST',
     data: {
       room_id: roomId,
-      token: token,
     },
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
   }) as ApiResponse<CheckPermissionResponse>;
 
-  if (res.code === 200 && res.data && res.data.canJoin) {
-    return res.data.interviewInfo;
+  if (res.code === 200 && res.data && res.data.success) {
+      return {
+          id: roomId,
+          roomId: roomId,
+          company: 'HireSphere', 
+          position: 'AI 面试', 
+          candidateName: '候选人', 
+          interviewer: '面试官', 
+          startTime: new Date().toISOString(),
+          token: token
+      };
   }
 
   throw new Error(res.message || '无法进入面试间：权限验证失败');

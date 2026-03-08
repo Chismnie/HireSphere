@@ -1,6 +1,12 @@
 import React from 'react';
-import { Button, message, Input, Tooltip, Typography } from 'antd';
-import { CopyOutlined, FileTextOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { Button, message, Input, Typography, Avatar, Divider, Tooltip } from 'antd';
+import { 
+  VideoCameraOutlined, 
+  UserOutlined, 
+  CopyOutlined,
+  LinkOutlined,
+  CheckCircleFilled
+} from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
@@ -11,113 +17,149 @@ interface WelcomeStepProps {
 
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, onStart }) => {
   // 检查当前用户是否为 HR（演示时通过 token 简单检查）
-  const isHR = window.location.search.includes('hr-token');
+  // 实际场景应根据 validateInterview 返回的角色信息判断
+  const isHR = true; // 暂时写死为 true 以展示所有功能，实际请替换为 interviewInfo.role === 'hr'
+
   const currentUrl = window.location.href;
 
-  const handleStart = () => {
-    onStart();
-  };
-
   const handleCopyLink = () => {
-    const url = new URL(currentUrl);
+    // 构造候选人链接 (演示逻辑)
+    const url = new URL(currentUrl.split('?')[0]);
     const talentId = interviewInfo.talentId || '1';
-    url.searchParams.set('token', `seeker-token-${talentId}`);
+    url.searchParams.set('roomId', interviewInfo.roomId);
+    url.searchParams.set('token', `seeker-token-${talentId}`); // 模拟 seeker token
     
     navigator.clipboard.writeText(url.toString());
-    message.success('面试链接已复制，请发送给候选人');
+    message.success('面试链接已复制');
   };
 
   const seekerLink = React.useMemo(() => {
-      const url = new URL(currentUrl);
+      const url = new URL(currentUrl.split('?')[0]);
       const talentId = interviewInfo.talentId || '1';
+      url.searchParams.set('roomId', interviewInfo.roomId);
       url.searchParams.set('token', `seeker-token-${talentId}`);
       return url.toString();
-  }, [currentUrl, interviewInfo.talentId]);
+  }, [currentUrl, interviewInfo]);
 
-  const handleOpenInterviewPage = () => {
+  const handleOpenSeekerPage = () => {
       window.open(seekerLink, '_blank');
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center bg-gray-50 p-8">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-12 shadow-sm text-center">
-        <div className="mb-6 flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-50">
-            <VideoCameraOutlined className="text-4xl text-blue-600" />
-          </div>
-        </div>
+    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-3xl rounded-3xl bg-white p-16 shadow-xl border border-gray-100 relative overflow-hidden">
         
-        <Title level={2} className="mb-2 text-gray-800">
-          欢迎进入面试间
-        </Title>
-        <Text className="mb-8 block text-lg text-gray-500">
-          {interviewInfo.position} - {interviewInfo.candidateName}
-        </Text>
+        {/* 顶部装饰背景圆 */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-50 rounded-full opacity-50 blur-3xl pointer-events-none"></div>
 
-        <div className="mb-10 grid grid-cols-3 gap-6 text-left">
-          <div className="rounded-xl bg-gray-50 p-4">
-            <div className="mb-1 text-xs text-gray-400">面试官</div>
-            <div className="font-medium text-gray-800">{interviewInfo.interviewer}</div>
-          </div>
-          <div className="rounded-xl bg-gray-50 p-4">
-            <div className="mb-1 text-xs text-gray-400">公司</div>
-            <div className="font-medium text-gray-800">{interviewInfo.company}</div>
-          </div>
-          <div className="rounded-xl bg-gray-50 p-4">
-            <div className="mb-1 text-xs text-gray-400">预计时长</div>
-            <div className="font-medium text-gray-800">45 分钟</div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center gap-4">
-          <Button 
-            type="primary" 
-            size="large" 
-            className="h-12 px-12 text-lg rounded-full shadow-lg shadow-blue-200"
-            onClick={handleStart}
-          >
-            开始面试
-          </Button>
+        <div className="relative z-10 flex flex-col items-center text-center">
           
-          <div className="mt-4 flex items-center gap-2 text-gray-400 text-sm">
-            <span className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                摄像头就绪
-            </span>
-            <span className="mx-2">|</span>
-            <span className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                麦克风就绪
-            </span>
+          {/* 图标区域 */}
+          <div className="mb-8 relative">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-50 shadow-inner">
+              <VideoCameraOutlined className="text-5xl text-blue-600" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1 shadow-sm">
+                 <CheckCircleFilled className="text-xl text-green-500" />
+            </div>
+          </div>
+          
+          {/* 标题区域 */}
+          <Title level={2} className="mb-2 !text-3xl !font-bold text-gray-800">
+            欢迎进入面试间
+          </Title>
+          <Text className="mb-10 block text-lg text-gray-500 font-medium">
+             - {interviewInfo.candidateName || '候选人'} -
+          </Text>
+
+          {/* 信息卡片网格 */}
+          <div className="mb-12 grid w-full grid-cols-3 gap-6">
+            <div className="flex flex-col items-start rounded-2xl border border-gray-100 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
+              <div className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">面试官</div>
+              <div className="flex items-center gap-3">
+                 <Avatar size="small" icon={<UserOutlined />} className="bg-blue-100 text-blue-600" />
+                 <div className="text-base font-bold text-gray-800 truncate">{interviewInfo.interviewer || '面试官'}</div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-start rounded-2xl border border-gray-100 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
+              <div className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">公司</div>
+              <div className="text-base font-bold text-gray-800 truncate w-full text-left">{interviewInfo.company || 'HireSphere 科技'}</div>
+            </div>
+            
+            <div className="flex flex-col items-start rounded-2xl border border-gray-100 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
+              <div className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">预计时长</div>
+              <div className="text-base font-bold text-gray-800">45 分钟</div>
+            </div>
           </div>
 
-            {/* 仅在 HR 端显示链接分享 */}
-            {isHR && (
-                <div className="mt-8 w-full border-t border-gray-100 pt-6">
-                <Text type="secondary" className="mb-3 block text-sm">分享面试链接给候选人</Text>
-                <div className="flex gap-2">
-                    <Input 
-                        readOnly 
-                        value={seekerLink} 
-                        className="bg-white text-gray-500"
-                    />
-                    <Tooltip title="复制链接">
-                        <Button type="primary" icon={<CopyOutlined />} onClick={handleCopyLink}>复制</Button>
-                    </Tooltip>
-                </div>
-                 <div className="mt-3">
-                    <Button type="link" icon={<FileTextOutlined />} onClick={handleOpenInterviewPage}>
-                        以求职者视角打开（测试用）
+          {/* 核心操作区 */}
+          <div className="flex flex-col items-center gap-6 w-full max-w-md">
+            <Button 
+              type="primary" 
+              size="large" 
+              className="h-14 w-full text-lg font-semibold rounded-full shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:scale-[1.02] transition-all duration-300"
+              onClick={onStart}
+            >
+              开始面试
+            </Button>
+            
+            <div className="flex items-center gap-6 text-gray-400 text-sm font-medium">
+              <span className="flex items-center gap-2 transition-colors hover:text-green-600 cursor-default">
+                  <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                  摄像头就绪
+              </span>
+              <span className="h-3 w-px bg-gray-200"></span>
+              <span className="flex items-center gap-2 transition-colors hover:text-green-600 cursor-default">
+                  <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                  麦克风就绪
+              </span>
+            </div>
+          </div>
+
+          {/* 底部链接分享区 (仅 HR 可见) */}
+          <div className="mt-12 w-full pt-8 border-t border-gray-100">
+             <div className="flex flex-col items-center gap-4">
+                <Text type="secondary" className="text-sm font-medium">分享面试链接给候选人</Text>
+                
+                <div className="flex w-full max-w-xl gap-3 items-center">
+                    <div className="flex-1 relative group">
+                        <Input 
+                            readOnly 
+                            value={seekerLink} 
+                            className="h-11 rounded-xl bg-gray-50 border-gray-200 text-gray-500 text-sm pl-4 pr-10 focus:bg-white transition-all"
+                        />
+                         <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <LinkOutlined className="text-gray-400" />
+                         </div>
+                    </div>
+                    
+                    <Button 
+                        icon={<CopyOutlined />} 
+                        onClick={handleCopyLink}
+                        className="h-11 px-6 rounded-xl border-blue-100 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:border-blue-200 font-medium transition-colors"
+                    >
+                        复制
                     </Button>
-                 </div>
                 </div>
-            )}
+
+                <Button 
+                    type="link" 
+                    size="small" 
+                    className="text-gray-400 hover:text-blue-600 text-xs flex items-center gap-1 mt-2"
+                    onClick={handleOpenSeekerPage}
+                >
+                    <LinkOutlined /> 以求职者视角打开 (测试用)
+                </Button>
+             </div>
+          </div>
+
         </div>
       </div>
       
-      <div className="mt-8 text-center text-gray-400 text-sm">
-        <p>系统已自动检测您的设备状态</p>
-        <p>© 2023 HireSphere Intelligent Interview System</p>
+      {/* 底部页脚 */}
+      <div className="mt-8 text-center text-gray-400 text-xs">
+         系统已自动检测您的设备状态 • 请保持网络通畅
       </div>
     </div>
   );

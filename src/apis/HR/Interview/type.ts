@@ -12,9 +12,9 @@ export interface InterviewInfo {
 }
 
 export interface CheckPermissionResponse {
-  canJoin: boolean;
-  role: 'hr' | 'seeker';
-  interviewInfo: InterviewInfo;
+  success: boolean;
+  // canJoin: boolean; // Removed based on new response format
+  // interviewInfo: InterviewInfo; // Removed based on new response format
 }
 
 export interface CreateInterviewResponse {
@@ -35,4 +35,9 @@ export interface AiSuggestionParams {
 
 export interface AiSuggestionResponse {
   text: string;
+}
+
+export interface ConnectionResponse {
+  ws_url: string;
+  ws_token?: string;
 }

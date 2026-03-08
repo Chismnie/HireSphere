@@ -1,5 +1,5 @@
 import axios from 'axios';
-const baseURL = 'http://frp-ski.com:46285';
+const baseURL = 'https://frp-ski.com:46285';
 axios.defaults.baseURL = baseURL;
 
 interface QueueItem {
@@ -55,7 +55,6 @@ class RequestQueue {
       const response = await axiosInstance(queueItem.options);
       queueItem.resolve(response.data);
     } catch (error: any) {
-        // Fast fail for connection errors
         if (error.code === 'ECONNABORTED' || error.message.includes('Network Error')) {
             queueItem.reject(new Error('无法连接到服务器，请检查网络或稍后重试'));
         } else {
@@ -82,8 +81,21 @@ class RequestQueue {
 }
 
 const axiosInstance = axios.create({
-  timeout: 3 * 1000, // Reduced timeout to 3s for faster failure feedback
+  timeout: 1280000 * 1000, 
 });
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const requestQueue = new RequestQueue();
 

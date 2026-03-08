@@ -3,8 +3,6 @@ import { createBrowserRouter } from "react-router-dom";
 import { Spin } from "antd";
 import Welcome from "../view/Welcome/index"; // 首屏保持静态引入，优化 LCP
 import AuthGuard from "../components/AuthGuard";
-import useUserStore from "@/store/modules/user";
-
 // 路由懒加载
 const Login = lazy(() => import("../view/Login/login"));
 const Seeker = lazy(() => import("../view/Seeker/index"));

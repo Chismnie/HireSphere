@@ -9,6 +9,9 @@ export const getAllTalents = () => {
   return request({
     url: '/api/v1/talent/get',
     method: 'GET',
+    params: {
+        type: 'all'
+    }
   });
 };
 

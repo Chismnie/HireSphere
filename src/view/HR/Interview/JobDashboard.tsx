@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Button, message, Modal, Select } from 'antd';
+import { Layout, Button, message, Modal, Select, Tag } from 'antd';
 import {
   UserOutlined,
   ArrowRightOutlined,
@@ -33,17 +33,27 @@ const JobDashboard: React.FC = () => {
             const list = res.data?.list || [];
             const mapped = list.map((item: any) => {
                 let status = 'pending';
-                if (item.interview_status === '已面试' || item.interview_status === 'interviewed') status = 'interviewed';
-                if (item.interview_status === '已录用' || item.interview_status === 'accepted') status = 'accepted';
-                if (item.interview_status === '已淘汰' || item.interview_status === 'rejected') status = 'rejected';
+                // Normalize status from backend
+                const backendStatus = item.interview_status || item.hire_status; // Fallback to hire_status
+                if (backendStatus === '已面试' || backendStatus === 'interviewed') status = 'interviewed';
+                if (backendStatus === '已录用' || backendStatus === 'accepted') status = 'accepted';
+                if (backendStatus === '已淘汰' || backendStatus === 'rejected') status = 'rejected';
                 
+                // Parse advantages which might be a string or array
+                let tags: string[] = [];
+                if (item.core_advantages) {
+                    tags = typeof item.core_advantages === 'string' 
+                        ? item.core_advantages.split(/,|，/) 
+                        : item.core_advantages;
+                }
+
                 return {
                     id: item.talent_id,
-                    name: item.full_name,
-                    position: item.target_position,
-                    matchScore: item.match_score,
+                    name: item.full_name || '未知候选人', // Ensure name fallback
+                    position: item.target_position || '通用岗位',
+                    matchScore: item.match_score || 0,
                     status: status,
-                    tags: item.core_advantages ? item.core_advantages.split(/,|，/) : [],
+                    tags: tags,
                 };
             });
             setCandidates(mapped);
@@ -83,16 +93,7 @@ const JobDashboard: React.FC = () => {
     try {
         const res: any = await createInterviewRoom(id);
         if (res.code === 200 || res.code === 0) {
-            const { room_id, talent_token } = res.data;
-            // 对于 HR，token 通常从登录态获取或后端返回专门的 hr_token
-            // 这里假设 create 接口返回的是用于分享给求职者的 token，或者包含 hr_token
-            // 如果后端只返回了 room_id，HR 的 token 可能需要另外获取或使用全局 token
-            // 假设：HR 直接使用全局 token 验证，或者 URL 参数仅用于传递 roomId
-            
-            // 注意：演示代码中 HR token 也是模拟的，这里我们使用后端返回的 room_id
-            // 并假设当前用户已登录，validateInterview 会处理权限
-            
-            // 为了演示方便，我们假设后端也返回了 hr_token，或者我们构造一个
+            const { room_id } = res.data;
             const hrToken = `hr-token-${id}`; // 临时模拟，实际应使用真实逻辑
             
             window.open(`/interview-room?roomId=${room_id}&token=${hrToken}`, '_blank');
