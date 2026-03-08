@@ -9,25 +9,60 @@ const InterviewRoom: React.FC = () => {
   const [step, setStep] = useState<'loading' | 'welcome' | 'chat' | 'end' | 'error'>('loading');
   const [interviewInfo, setInterviewInfo] = useState<InterviewInfo | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [role, setRole] = useState<'hr' | 'seeker'>('hr');
+  const [talentToken, setTalentToken] = useState<string>('');
 
   useEffect(() => {
     const init = async () => {
       try {
-        // 从 URL 获取房间 ID 和 Token
         const params = new URLSearchParams(window.location.search);
         const roomId = params.get('roomId');
-        const token = params.get('token');
+        
+        // 尝试获取各种 token
+        const urlToken = params.get('token');
+        const urlTalentToken = params.get('talentToken');
+        const localToken = localStorage.getItem('token');
+        
+        // 核心逻辑：判断角色
+        // 1. 如果 URL 中有 token 且与 talentToken 相等 -> Seeker
+        // 2. 如果 URL 中有 token 且包含 'talent' -> Seeker (兼容旧逻辑)
+        // 3. 否则默认为 HR (使用 localToken)
+        
+        let activeToken = '';
+        let currentRole: 'hr' | 'seeker' = 'hr';
 
-        if (!roomId || !token) {
-          throw new Error('无效的面试链接');
+        if (urlToken) {
+            // 如果 urlToken 等于 urlTalentToken，或者是 seeker 格式
+            if ((urlTalentToken && urlToken === urlTalentToken) || urlToken.includes('talent')) {
+                currentRole = 'seeker';
+                activeToken = urlToken;
+            } else {
+                // URL 中有 token 但不是 seeker，可能是 HR 的 token (虽然不推荐 URL 传 HR token)
+                currentRole = 'hr';
+                activeToken = urlToken;
+            }
+        } else if (localToken) {
+            // 没有 URL token，使用本地 token -> HR
+            currentRole = 'hr';
+            activeToken = localToken;
         }
 
-        // 验证面试信息
-        const info = await validateInterview(roomId, token);
+        if (!roomId || !activeToken) {
+          throw new Error('无效的面试链接：缺少必要参数');
+        }
+
+        // 验证权限 (API 调用)
+        const info = await validateInterview(roomId, activeToken);
+        
+        setRole(currentRole);
+        if (urlTalentToken) {
+            setTalentToken(urlTalentToken);
+        }
+
         setInterviewInfo({
             ...info,
-            roomId, // Ensure roomId and token are passed down
-            token
+            roomId,
+            token: activeToken
         });
         setStep('welcome');
       } catch (err: any) {
@@ -60,10 +95,17 @@ const InterviewRoom: React.FC = () => {
     );
   }
 
+  // 渲染逻辑分流
+  const commonProps = {
+      interviewInfo: interviewInfo!,
+      role,
+      talentToken
+  };
+
   if (step === 'welcome' && interviewInfo) {
     return (
       <WelcomeStep 
-        interviewInfo={interviewInfo} 
+        {...commonProps}
         onStart={() => setStep('chat')} 
       />
     );
@@ -72,7 +114,7 @@ const InterviewRoom: React.FC = () => {
   if (step === 'chat' && interviewInfo) {
     return (
       <ChatRoom 
-        interviewInfo={interviewInfo} 
+        {...commonProps}
         onEndInterview={() => setStep('end')} 
       />
     );

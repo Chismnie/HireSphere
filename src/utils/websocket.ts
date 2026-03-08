@@ -17,7 +17,7 @@ type StatusListener = (status: 'connecting' | 'connected' | 'disconnected') => v
 
 class InterviewWebSocket {
   private ws: WebSocket | null = null;
-  private url: string;
+  private url?: string;
   private messageListeners: Listener[] = [];
   private statusListeners: StatusListener[] = [];
   private reconnectTimer: NodeJS.Timeout | null = null;
@@ -31,6 +31,12 @@ class InterviewWebSocket {
   async connect(token: string, roomId: string, role: 'hr' | 'seeker') {
     if (!token || token === 'undefined' || token === 'null') {
         console.error('WS 连接失败: 无效的 Token');
+        this.notifyStatus('disconnected');
+        return;
+    }
+
+    if (!roomId || roomId === 'undefined') {
+        console.error('WS 连接失败: 无效的 Room ID');
         this.notifyStatus('disconnected');
         return;
     }
@@ -54,7 +60,9 @@ class InterviewWebSocket {
     try {
       this.notifyStatus('connecting');
       
-      const wsUrl = `wss://frp-ski.com:46285/api/v1/interview/ws/join?token=${token}&room_id=${roomId}`;
+      // 使用相对路径，走 Vite 代理
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/api/v1/interview/ws/join?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(roomId)}`;
 
       console.log('WS 连接信息:', { wsUrl, token, roomId, role });
       
@@ -70,7 +78,10 @@ class InterviewWebSocket {
         }
         
         this.ws?.send(JSON.stringify({
-            type: 'join'
+            type: 'join',
+            data: {
+                room_id: roomId
+            }
         }));
       };
 
@@ -84,7 +95,7 @@ class InterviewWebSocket {
                   id: Date.now().toString() + Math.random().toString(),
                   sender: 'other',
                   name: rawData.from === 'hr' ? '面试官' : '候选人',
-                  role: rawData.from === 'hr' ? 'HR' : 'Seeker',
+                  role: rawData.from === 'hr' ? 'HR' : 'Seeker', 
                   content: rawData.data.text,
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                   type: 'text'
@@ -98,16 +109,20 @@ class InterviewWebSocket {
 
       this.ws.onclose = (event) => {
         console.log(`WS 连接关闭: code=${event.code}, reason=${event.reason}, wasClean=${event.wasClean}`);
+        
+        // 处理“已在其他设备连接”的情况
+        if (event.reason === '您已在其它设备连接' || event.code === 1000) {
+            console.log('WS 正常关闭或被顶号，不重连');
+            this.notifyStatus('disconnected');
+            this.ws = null;
+            return;
+        }
+
         this.notifyStatus('disconnected');
         this.ws = null;
 
         if (event.code === 1008 || (event.code >= 4000 && event.code < 5000)) {
             console.error('WS 认证失败或策略违规，停止重连');
-            return;
-        }
-        
-        if (event.code === 1000) {
-            console.log('WS 正常关闭，不重连');
             return;
         }
 
@@ -127,18 +142,31 @@ class InterviewWebSocket {
   }
 
   send(content: string, roomId?: string, role: 'hr' | 'seeker' = 'hr') {
+    // 增加对 WebSocket.CONNECTING 状态的容错，如果是连接中，则稍后重试
+    if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+        console.log('WS 正在连接中，消息进入等待队列...');
+        setTimeout(() => this.send(content, roomId, role), 500);
+        return;
+    }
+
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      // 构造符合后端要求的消息体
+      // from 字段必须是 'hr' 或 'candidate' (注意这里后端可能是 candidate)
+      // 根据之前的 ChatRoom 逻辑，我们这里统一用 'hr' 和 'candidate'
+      const senderRole = role === 'hr' ? 'hr' : 'candidate';
+      
       const payload = {
           type: 'chat',
           data: {
               text: content,
               room_id: roomId
           },
-          from: role
+          from: senderRole
       };
+      console.log('Sending WS message:', payload);
       this.ws.send(JSON.stringify(payload));
     } else {
-        console.warn('WS 未连接，无法发送消息');
+        console.warn('WS 未连接，无法发送消息', this.ws?.readyState);
         message.error('连接已断开，消息发送失败');
     }
   }

@@ -1,6 +1,9 @@
 import axios from 'axios';
-const baseURL = 'https://frp-ski.com:46285';
-axios.defaults.baseURL = baseURL;
+
+// 在开发环境下使用代理（相对路径），生产环境可能需要具体配置
+// 如果配置了 vite proxy，这里不需要完整的 baseURL
+const baseURL = ''; 
+
 
 interface QueueItem {
   options: any;
@@ -15,19 +18,21 @@ class RequestQueue {
 
   async add(options: any): Promise<any> {
     return new Promise((resolve, reject) => {
-      const queueItem = { options, resolve, reject };
-      //查看请求参数的请求头是否有pop
-      if (options.Headers && options.Headers.pop) {
-        //去掉请求头中的pop
-        delete options.Headers.pop;
+      // 检查请求头中的 pop 属性
+      const useQueue = options.headers && options.headers.pop;
+      
+      const queueItem: QueueItem = { options, resolve, reject };
+
+      if (useQueue) {
+        // 去掉请求头中的 pop
+        delete options.headers.pop;
         if (this.activeCount < this.maxConcurrent) {
-          // 如果当前活跃请求数小于最大并发数，直接执行
           this.processRequest(queueItem);
         } else {
-          // 否则加入队列
           this.queue.push(queueItem);
         }
       } else {
+        // 普通请求直接执行
         this.processNormalRequest(queueItem);
       }
     });
@@ -40,7 +45,7 @@ class RequestQueue {
       queueItem.resolve(response.data);
     } catch (error: any) {
         // Fast fail for connection errors
-        if (error.code === 'ECONNABORTED' || error.message.includes('Network Error')) {
+        if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('Network Error'))) {
             queueItem.reject(new Error('无法连接到服务器，请检查网络或稍后重试'));
         } else {
             queueItem.reject(error);
@@ -55,17 +60,15 @@ class RequestQueue {
       const response = await axiosInstance(queueItem.options);
       queueItem.resolve(response.data);
     } catch (error: any) {
-        if (error.code === 'ECONNABORTED' || error.message.includes('Network Error')) {
+        if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('Network Error'))) {
             queueItem.reject(new Error('无法连接到服务器，请检查网络或稍后重试'));
         } else {
             queueItem.reject(error);
         }
-    } finally {
-      this.processNextRequest();
     }
   }
   private processNextRequest() {
-    if (this.queue.length > 0 && this.activeCount < this.maxConcurrent) {
+    while (this.queue.length > 0 && this.activeCount < this.maxConcurrent) {
       const nextRequest = this.queue.shift();
       if (nextRequest) {
         this.processRequest(nextRequest);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, message, Input, Typography, Avatar, Divider, Tooltip } from 'antd';
+import { Button, message, Input, Typography, Avatar } from 'antd';
 import { 
   VideoCameraOutlined, 
   UserOutlined, 
@@ -12,34 +12,40 @@ const { Title, Text } = Typography;
 
 interface WelcomeStepProps {
   interviewInfo: any;
+  role: 'hr' | 'seeker';
+  talentToken?: string;
   onStart: () => void;
 }
 
-const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, onStart }) => {
-  // 检查当前用户是否为 HR（演示时通过 token 简单检查）
-  // 实际场景应根据 validateInterview 返回的角色信息判断
-  const isHR = true; // 暂时写死为 true 以展示所有功能，实际请替换为 interviewInfo.role === 'hr'
+const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, role, talentToken, onStart }) => {
+  const isHR = role === 'hr';
 
   const currentUrl = window.location.href;
 
+  const seekerLink = React.useMemo(() => {
+      // 获取当前的 URL 并构建新的求职者链接
+      const currentOrigin = window.location.origin + window.location.pathname;
+      const params = new URLSearchParams();
+      params.set('roomId', interviewInfo.roomId);
+      
+      if (talentToken) {
+        params.set('token', talentToken);
+        params.set('talentToken', talentToken); // 冗余一份，方便 Seeker 页面判断
+      } else {
+        console.warn('缺少 talentToken，生成的求职者链接可能无效');
+      }
+      
+      return `${currentOrigin}?${params.toString()}`;
+  }, [interviewInfo, talentToken]);
+
   const handleCopyLink = () => {
-    // 构造候选人链接 (演示逻辑)
-    const url = new URL(currentUrl.split('?')[0]);
-    const talentId = interviewInfo.talentId || '1';
-    url.searchParams.set('roomId', interviewInfo.roomId);
-    url.searchParams.set('token', `seeker-token-${talentId}`); // 模拟 seeker token
-    
-    navigator.clipboard.writeText(url.toString());
+    if (!talentToken) {
+      message.error('缺少求职者 Token，无法生成面试链接');
+      return;
+    }
+    navigator.clipboard.writeText(seekerLink);
     message.success('面试链接已复制');
   };
-
-  const seekerLink = React.useMemo(() => {
-      const url = new URL(currentUrl.split('?')[0]);
-      const talentId = interviewInfo.talentId || '1';
-      url.searchParams.set('roomId', interviewInfo.roomId);
-      url.searchParams.set('token', `seeker-token-${talentId}`);
-      return url.toString();
-  }, [currentUrl, interviewInfo]);
 
   const handleOpenSeekerPage = () => {
       window.open(seekerLink, '_blank');
@@ -118,6 +124,7 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, onStart }) => 
           </div>
 
           {/* 底部链接分享区 (仅 HR 可见) */}
+          {isHR && (
           <div className="mt-12 w-full pt-8 border-t border-gray-100">
              <div className="flex flex-col items-center gap-4">
                 <Text type="secondary" className="text-sm font-medium">分享面试链接给候选人</Text>
@@ -143,16 +150,19 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, onStart }) => 
                     </Button>
                 </div>
 
-                <Button 
-                    type="link" 
-                    size="small" 
-                    className="text-gray-400 hover:text-blue-600 text-xs flex items-center gap-1 mt-2"
-                    onClick={handleOpenSeekerPage}
-                >
-                    <LinkOutlined /> 以求职者视角打开 (测试用)
-                </Button>
-             </div>
+                <div className="flex justify-center w-full">
+                  <Button 
+                      type="link" 
+                      size="small" 
+                      className="text-gray-400 hover:text-blue-600 text-xs flex items-center gap-1 mt-2"
+                      onClick={handleOpenSeekerPage}
+                  >
+                      <LinkOutlined /> 以求职者视角打开 (测试用)
+                  </Button>
+               </div>
+            </div>
           </div>
+          )}
 
         </div>
       </div>

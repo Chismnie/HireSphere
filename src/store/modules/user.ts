@@ -31,36 +31,10 @@ const useUserStore = create<StoreType>((set) => ({
     phone: localStorage.getItem("phone") || "",
   },
   setId: (id) => set({ id }),
-  setUserInfo: ({ token, role }) => {
-    set({ token, role });
-    localStorage.setItem("token", token);
-    localStorage.setItem("role", role);
-    
-    // Set default profile based on role if not already set
-    if (role === 'seeker') {
-      const defaultSeeker = {
-        username: '求职者小王',
-        company: '普通用户',
-        email: 'seeker_wang@example.com',
-        phone: '13900139000'
-      };
-      set({ profile: defaultSeeker });
-      localStorage.setItem("username", defaultSeeker.username);
-      localStorage.setItem("company", defaultSeeker.company);
-      localStorage.setItem("email", defaultSeeker.email);
-      localStorage.setItem("phone", defaultSeeker.phone);
-    } else {
-      const defaultHr = {
-        username: 'HR Admin',
-        company: '咕咕嘎嘎科技有限公司',
-        email: 'hr_admin@gugugaga.com',
-        phone: '13800138000'
-      };
-      set({ profile: defaultHr });
-      localStorage.setItem("username", defaultHr.username);
-      localStorage.setItem("company", defaultHr.company);
-      localStorage.setItem("email", defaultHr.email);
-      localStorage.setItem("phone", defaultHr.phone);
+  setUserInfo: (userInfo) => {
+    set((state) => ({ ...state, ...userInfo }));
+    if (userInfo.token) {
+      localStorage.setItem('token', userInfo.token);
     }
   },
   updateProfile: (newProfile) =>

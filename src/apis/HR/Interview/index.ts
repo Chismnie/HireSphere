@@ -8,6 +8,10 @@ export const validateInterview = async (roomId: string, token: string): Promise<
   const res = await request({
     url: '/api/v1/interview/check_room_permission',
     method: 'POST',
+    // 同时通过 query 和 header 传递 token，以兼容后端不同校验方式
+    params: {
+        token: token
+    },
     data: {
       room_id: roomId,
     },

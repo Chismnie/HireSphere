@@ -33,6 +33,9 @@ const Login: React.FC = () => {
         message.success('登录成功');
         const { token, username, email: userEmail } = res.data;
         
+        // 存储 token 到 localStorage，确保 axios 拦截器能获取到
+        localStorage.setItem('token', token);
+        
         // 存储更多用户信息
         // 注意：useUserStore 的类型定义可能需要更新以支持存储 email
         setUserInfo({ token, role: activeTab as 'seeker' | 'hr' });

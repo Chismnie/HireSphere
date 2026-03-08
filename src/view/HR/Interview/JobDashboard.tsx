@@ -93,10 +93,17 @@ const JobDashboard: React.FC = () => {
     try {
         const res: any = await createInterviewRoom(id);
         if (res.code === 200 || res.code === 0) {
-            const { room_id } = res.data;
-            const hrToken = `hr-token-${id}`; // 临时模拟，实际应使用真实逻辑
+            const { room_id, talent_token } = res.data;
+            // 获取当前 HR 的 token，如果没有则提示重新登录
+            const hrToken = localStorage.getItem('token');
+            if (!hrToken) {
+                message.error('Token 已过期，请重新登录');
+                return;
+            }
             
-            window.open(`/interview-room?roomId=${room_id}&token=${hrToken}`, '_blank');
+            // 将 room_id, hr_token, talent_token 一起传递给面试间
+            // 面试间会根据 token 自动判断角色，并使用 talent_token 生成求职者链接
+            window.open(`/interview-room?roomId=${room_id}&token=${hrToken}&talentToken=${talent_token}&talentId=${id}`, '_blank');
         } else {
             message.error(res.message || '创建面试间失败');
         }

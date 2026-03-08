@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Button, message, Modal, List, Tooltip } from 'antd';
 import {
   InboxOutlined,
@@ -16,7 +16,7 @@ import FileLoading from './FileLoading';
 const { Dragger } = Upload;
 
 import { uploadResume } from '@/apis/Common/Resume';
-import { getAllTalents } from '@/apis/HR/Talent'; // Import getAllTalents to refresh dashboard if needed
+// Import getAllTalents to refresh dashboard if needed
 // However, ResumeUpload is usually in a separate page/modal.
 // The prompt says "update seeker info in interview dashboard".
 // This likely means ResumeUpload should trigger a refresh in JobDashboard OR 

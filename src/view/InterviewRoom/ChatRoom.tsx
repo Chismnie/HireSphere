@@ -7,15 +7,16 @@ import { RobotOutlined, CheckCircleOutlined, WarningOutlined, BulbOutlined, User
 
 interface ChatRoomProps {
   interviewInfo: any;
+  role: 'hr' | 'seeker';
   onEndInterview: () => void;
 }
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, onEndInterview }) => {
+const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview }) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  const isHR = window.location.search.includes('hr-token');
+  const isHR = role === 'hr';
   const [aiSuggestion, setAiSuggestion] = useState<string>('如何处理高并发下的 Redis 缓存雪崩与穿透问题？');
 
   React.useEffect(() => {
@@ -32,12 +33,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, onEndInterview }) =>
   }, [messages, interviewInfo.roomId]);
 
   React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlToken = urlParams.get('token');
-    const token = interviewInfo.token || urlToken || localStorage.getItem('token');
+    // 优先使用 interviewInfo 中的 token，它是经过 validateInterview 校验过的有效 token
+    const token = interviewInfo.token;
     
     if (token) {
-      wsService.connect(token, interviewInfo.roomId, isHR ? 'hr' : 'seeker');
+      wsService.connect(token, interviewInfo.roomId, role);
     } else {
         message.error('无法连接聊天服务：缺少 Token');
     }
@@ -62,10 +62,13 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, onEndInterview }) =>
       setStatus(s);
     });
 
+    // 清理旧消息监听，防止重复
     return () => {
       unsubscribeMsg();
       unsubscribeStatus();
-      wsService.close(); 
+      // 这里不主动关闭连接，因为 InterviewRoom 卸载时会触发，但如果在 WelcomeStep 和 ChatRoom 切换时可能会导致断连
+      // 现在的架构是 ChatRoom 只负责显示，连接管理在 websocket.ts 中单例维护，所以这里不需要 close
+      // wsService.close(); 
     };
   }, []); 
 
@@ -91,7 +94,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, onEndInterview }) =>
     };
 
     setMessages((prev) => [...prev, newMsg]);
-    wsService.send(content, interviewInfo.roomId, isHR ? 'hr' : 'seeker');
+    wsService.send(content, interviewInfo.roomId, role);
     if (!text) setInputValue('');
     
     if (isHR) { 

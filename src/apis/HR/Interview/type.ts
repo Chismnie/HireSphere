@@ -13,8 +13,6 @@ export interface InterviewInfo {
 
 export interface CheckPermissionResponse {
   success: boolean;
-  // canJoin: boolean; // Removed based on new response format
-  // interviewInfo: InterviewInfo; // Removed based on new response format
 }
 
 export interface CreateInterviewResponse {
