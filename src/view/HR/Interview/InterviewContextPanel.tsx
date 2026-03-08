@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Alert, Typography, Card } from 'antd';
+import { Tabs, Alert, Typography, Card, Button, Tooltip } from 'antd';
 import {
   Radar,
   RadarChart,
@@ -11,7 +11,7 @@ import {
 import { pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { FileTextOutlined, BulbOutlined } from '@ant-design/icons';
+import { FileTextOutlined, BulbOutlined, FullscreenOutlined } from '@ant-design/icons';
 import PdfPreview from '@/components/ResumeUpload/PdfPreview';
 import { getResumeUrl } from '@/apis/HR/Resume';
 
@@ -41,44 +41,69 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (talentId) {
+    // 强制把 talentId 转为字符串，防止 props 传递数字导致类型不匹配
+    const id = String(talentId);
+    if (talentId && id !== 'undefined') {
       setLoading(true);
-      getResumeUrl(talentId).then((res: any) => {
+      getResumeUrl(id).then((res: any) => {
         if (res.code === 200 || res.code === 0) {
           setResumeUrl(res.data.resume_url);
+        } else {
+            console.warn('获取简历失败:', res.message);
         }
       })
-      .catch(console.error)
+      .catch(err => {
+          console.error('获取简历异常:', err);
+      })
       .finally(() => setLoading(false));
     }
   }, [talentId]);
 
   const ResumeTab = () => (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-300 bg-gray-50/50">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
       {loading ? (
           <div className="flex flex-1 flex-col items-center justify-center p-8">
-            <div className="mb-4 rounded-full bg-white p-6 shadow-sm border border-gray-300 animate-pulse">
-               <div className="h-8 w-8 bg-gray-200 rounded"></div>
+            <div className="mb-4 rounded-full bg-gray-50 p-6 shadow-sm border border-gray-100 animate-pulse">
+               <FileTextOutlined className="text-3xl text-gray-300" />
             </div>
             <Text type="secondary" className="text-gray-400">正在加载简历...</Text>
           </div>
       ) : resumeUrl ? (
-        <div className="flex-1 overflow-hidden relative bg-white">
+        <div className="flex-1 overflow-hidden relative bg-gray-100 group">
+             {/* 工具栏悬浮按钮 */}
+             <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Tooltip title="在新窗口查看">
+                    <Button 
+                        shape="circle" 
+                        icon={<FullscreenOutlined />} 
+                        onClick={() => window.open(resumeUrl, '_blank')}
+                        className="bg-white shadow-md border-gray-200"
+                    />
+                </Tooltip>
+             </div>
+
              {/* 检查文件扩展名，决定渲染方式 */}
              {resumeUrl.toLowerCase().includes('.pdf') ? (
                  <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-                    <PdfPreview file={resumeUrl} />
+                    <div className="min-h-full flex justify-center py-4">
+                        {/* 考虑到侧边栏宽度约为 450px，减去 padding (PdfPreview 内部有 p-4=32px) 后设置 PDF 宽度 */}
+                        <PdfPreview file={resumeUrl} width={400} />
+                    </div>
                  </div>
              ) : (
-                 <div className="absolute inset-0 overflow-y-auto custom-scrollbar flex items-start justify-center p-4">
-                     <img src={resumeUrl} alt="Resume" className="max-w-full shadow-md rounded" />
+                 <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-3">
+                     <img 
+                        src={resumeUrl} 
+                        alt="Resume" 
+                        className="w-full h-auto shadow-md rounded-lg bg-white block" 
+                     />
                  </div>
              )}
         </div>
       ) : (
       <div className="flex flex-1 flex-col items-center justify-center p-8">
-        <div className="mb-4 rounded-full bg-white p-8 shadow-sm border border-gray-300">
-          <FileTextOutlined className="text-4xl text-blue-200" />
+        <div className="mb-4 rounded-full bg-gray-50 p-8 shadow-sm border border-gray-100">
+          <FileTextOutlined className="text-4xl text-gray-300" />
         </div>
         <Text type="secondary" className="text-gray-400">
           暂无简历预览

@@ -12,9 +12,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 interface PdfPreviewProps {
   file: File | string | null;
+  width?: number;
 }
 
-const PdfPreview: React.FC<PdfPreviewProps> = ({ file }) => {
+const PdfPreview: React.FC<PdfPreviewProps> = ({ file, width }) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
 
@@ -31,7 +32,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ file }) => {
   }
 
   return (
-    <div className="flex h-full flex-col items-center">
+    <div className="flex h-full flex-col items-center w-full">
       <div className="flex min-h-[500px] w-full flex-1 justify-center overflow-auto rounded bg-gray-100 p-4">
         <Document
           file={file}
@@ -52,7 +53,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ file }) => {
             pageNumber={pageNumber}
             renderTextLayer={true}
             renderAnnotationLayer={true}
-            width={600} // 固定宽度或根据容器调整
+            width={width || 600} // 使用传入的宽度或默认值
             className="bg-white"
           />
         </Document>

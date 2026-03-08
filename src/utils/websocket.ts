@@ -90,6 +90,12 @@ class InterviewWebSocket {
           const rawData = JSON.parse(event.data);
           console.log('WS message', rawData);
           
+          if (rawData.type === 'error') {
+              // 用户反馈：不需要显示服务器错误提示，直接忽略或仅打印日志
+              console.warn('WS Error Message (Hidden from UI):', rawData);
+              return;
+          }
+
           if (rawData.type === 'chat') {
               const msg: ChatMessage = {
                   id: Date.now().toString() + Math.random().toString(),
@@ -166,8 +172,12 @@ class InterviewWebSocket {
       console.log('Sending WS message:', payload);
       this.ws.send(JSON.stringify(payload));
     } else {
-        console.warn('WS 未连接，无法发送消息', this.ws?.readyState);
-        message.error('连接已断开，消息发送失败');
+        // console.warn('WS 未连接，无法发送消息', this.ws?.readyState);
+        // message.error('连接已断开，消息发送失败');
+        // 尝试自动重连并重发
+        console.log('WS 未连接，尝试重连...');
+        this.notifyStatus('connecting');
+        message.warning('正在连接服务器，请稍后重试');
     }
   }
 

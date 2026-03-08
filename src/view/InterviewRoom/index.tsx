@@ -21,6 +21,7 @@ const InterviewRoom: React.FC = () => {
         // 尝试获取各种 token
         const urlToken = params.get('token');
         const urlTalentToken = params.get('talentToken');
+        const urlTalentId = params.get('talentId'); // 获取 talentId
         const localToken = localStorage.getItem('token');
         
         // 核心逻辑：判断角色
@@ -62,7 +63,8 @@ const InterviewRoom: React.FC = () => {
         setInterviewInfo({
             ...info,
             roomId,
-            token: activeToken
+            token: activeToken,
+            talentId: urlTalentId || undefined // 将 talentId 放入 interviewInfo
         });
         setStep('welcome');
       } catch (err: any) {
