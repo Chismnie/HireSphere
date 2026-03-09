@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Tag, message, Avatar } from 'antd';
 import { wsService } from '@/utils/websocket';
 import InterviewContextPanel from '../HR/Interview/InterviewContextPanel';
-import { addMessageTag, getAiSuggestion } from '@/apis/HR/Interview';
+import { addMessageTag, getAiSuggestion, endInterview } from '@/apis/HR/Interview';
 import { RobotOutlined, CheckCircleOutlined, WarningOutlined, BulbOutlined, UserOutlined } from '@ant-design/icons';
 
 interface ChatRoomProps {
@@ -17,7 +17,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const isHR = role === 'hr';
-  const [aiSuggestion, setAiSuggestion] = useState<string>('如何处理高并发下的 Redis 缓存雪崩与穿透问题？');
+  const [aiSuggestion, setAiSuggestion] = useState<string>('你好，我是本场面试的面试官，很高兴你能参加面试，先做个自我介绍吧');
 
   React.useEffect(() => {
     const saved = localStorage.getItem(`chat_history_${interviewInfo.roomId}`);
@@ -29,8 +29,12 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
   React.useEffect(() => {
     if (messages.length > 0) {
         localStorage.setItem(`chat_history_${interviewInfo.roomId}`, JSON.stringify(messages));
+        // 同时保存一份以 talentId 为 key 的记录，供报告页使用
+        if (interviewInfo.talentId) {
+            localStorage.setItem(`chat_history_talent_${interviewInfo.talentId}`, JSON.stringify(messages));
+        }
     }
-  }, [messages, interviewInfo.roomId]);
+  }, [messages, interviewInfo.roomId, interviewInfo.talentId]);
 
   React.useEffect(() => {
     // 优先使用 interviewInfo 中的 token，它是经过 validateInterview 校验过的有效 token
@@ -151,12 +155,36 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
       }
   };
 
+  const handleEndInterview = async () => {
+    if (window.confirm('确定要结束本次面试吗？')) {
+      try {
+        if (isHR) {
+             const res: any = await endInterview(interviewInfo.roomId);
+             if (res.code === 200 || res.code === 0) {
+                 message.success('面试已结束');
+                 onEndInterview();
+             } else {
+                 message.error(res.message || '结束面试失败');
+             }
+        } else {
+            // 求职者直接退出
+            onEndInterview();
+        }
+      } catch (error) {
+        console.error('End interview failed:', error);
+        message.error('结束面试请求失败');
+        // 即使请求失败，如果是网络问题等，可能也希望允许用户退出界面
+        // onEndInterview(); 
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100 p-4">
-      <div className="flex h-[90vh] w-full max-w-[1600px] overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+      <div className="flex h-[90vh] w-full max-w-[1600px] overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200">
         
         <div className="flex flex-1 flex-col min-w-0 relative">
-          <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4 shadow-sm z-10 shrink-0">
+          <div className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4 shadow-sm z-10 shrink-0">
             <div>
               <div className="text-lg font-bold text-gray-800">
                 {interviewInfo.position} - {interviewInfo.candidateName}
@@ -171,7 +199,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
               </div>
             </div>
             <div className="flex gap-3">
-              <Button danger onClick={onEndInterview} className="rounded-lg px-6">结束面试</Button>
+              <Button danger onClick={handleEndInterview} className="rounded-lg px-6">结束面试</Button>
             </div>
           </div>
 
@@ -201,10 +229,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
                   </div>
                   
                   <div
-                    className={`relative rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-sm
+                    className={`relative rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-sm border
                       ${msg.sender === 'me' 
-                        ? 'bg-blue-600 text-white rounded-tr-none' 
-                        : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                        ? 'bg-blue-600 text-white rounded-tr-none border-blue-600' 
+                        : 'bg-white text-gray-800 border-gray-200 rounded-tl-none'
                       }`}
                   >
                     {msg.content}

@@ -43,7 +43,7 @@ const TalentDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('default');
-  const [talents, setTalents] = useState<Talent[]>([]);
+  const [talents, setTalents] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,18 +51,20 @@ const TalentDashboard: React.FC = () => {
         const res: any = await getInterviewedTalents();
         if (res.code === 200 || res.code === 0) {
             const list = res.data?.list || [];
+            // 根据后端返回的字段进行映射
             const mapped = list.map((item: any) => {
                 let status = 'pending';
+                // 假设后端返回 hire_status
                 if (item.hire_status === '已录用' || item.hire_status === 'accepted') status = 'accepted';
                 if (item.hire_status === '已淘汰' || item.hire_status === 'rejected') status = 'rejected';
                 
                 return {
                     id: item.talent_id,
                     name: item.full_name,
-                    position: item.target_position,
+                    position: item.target_position || '前端工程师', // 默认值
                     status: status,
                     interviewTime: item.interview_time ? new Date(item.interview_time).toLocaleDateString() : 'N/A',
-                    tags: item.core_advantages ? item.core_advantages.split(/,|，/) : [],
+                    tags: item.core_advantages ? (Array.isArray(item.core_advantages) ? item.core_advantages : item.core_advantages.split(/,|，/)) : [],
                 };
             });
             setTalents(mapped);
@@ -73,6 +75,15 @@ const TalentDashboard: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // Dynamic Filter Options
+  const positionOptions = React.useMemo(() => {
+      const positions = Array.from(new Set(talents.map(t => t.position))).filter(Boolean);
+      return [
+          { value: 'all', label: '所有岗位' },
+          ...positions.map(p => ({ value: p, label: p }))
+      ];
+  }, [talents]);
 
   // Filter Logic
   const filteredTalents = talents
@@ -87,8 +98,31 @@ const TalentDashboard: React.FC = () => {
       return 0;
     });
 
-  const handleViewReport = (id: string) => {
-    navigate(`/hr/talent/${id}`);
+  const handleViewReport = (talent: any) => {
+    navigate(`/hr/talent/${talent.id}`, { state: { talent } });
+  };
+  
+  const renderStatusBadge = (status: string) => {
+      switch(status) {
+          case 'accepted':
+              return (
+                  <span className="rounded-full border border-lime-200 bg-lime-50 px-4 py-1 text-sm font-medium text-lime-700 whitespace-nowrap">
+                      已录用
+                  </span>
+              );
+          case 'rejected':
+              return (
+                  <span className="rounded-full border border-red-200 bg-red-50 px-4 py-1 text-sm font-medium text-red-700 whitespace-nowrap">
+                      已淘汰
+                  </span>
+              );
+          default:
+              return (
+                  <span className="rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700 whitespace-nowrap">
+                      面试完成
+                  </span>
+              );
+      }
   };
 
   return (
@@ -103,12 +137,7 @@ const TalentDashboard: React.FC = () => {
               className="w-48 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300"
               variant="borderless"
               size="large"
-              options={[
-                { value: 'all', label: '所有岗位' },
-                { value: '产品经理', label: '产品经理' },
-                { value: '前端开发', label: '前端开发' },
-                { value: 'Java后端', label: 'Java后端' },
-              ]}
+              options={positionOptions}
               onChange={setJobFilter}
             />
             <Select
@@ -153,18 +182,10 @@ const TalentDashboard: React.FC = () => {
                         <span className="rounded-full border border-gray-300 bg-cyan-50 px-4 py-1 text-sm font-medium text-cyan-700 whitespace-nowrap">
                         职位 ({talent.position})
                         </span>
-                        <span
-                        className={`rounded-full border border-gray-300 px-4 py-1 text-sm font-medium whitespace-nowrap ${
-                            talent.status === 'accepted'
-                            ? 'bg-lime-50 text-lime-700'
-                            : 'bg-red-50 text-red-700'
-                        }`}
-                        >
-                        {talent.status === 'accepted' ? '已录用' : '已淘汰'}
-                        </span>
-                        <span className="rounded-full border border-gray-300 bg-purple-50 px-4 py-1 text-sm font-medium text-purple-700 whitespace-nowrap">
+                        {renderStatusBadge(talent.status)}
+                        {/* <span className="rounded-full border border-gray-300 bg-purple-50 px-4 py-1 text-sm font-medium text-purple-700 whitespace-nowrap">
                         面试时间: {talent.interviewTime}
-                        </span>
+                        </span> */}
                     </div>
 
                     <div className="text-sm text-gray-400">
@@ -177,7 +198,7 @@ const TalentDashboard: React.FC = () => {
                 <Button
                   type="primary"
                   className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-medium shadow-sm hover:bg-blue-700 border-none shrink-0"
-                  onClick={() => handleViewReport(talent.id)}
+                  onClick={() => handleViewReport(talent)}
                 >
                   查看报告 <ArrowRightOutlined />
                 </Button>

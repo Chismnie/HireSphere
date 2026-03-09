@@ -64,3 +64,12 @@ export const getAiSuggestion = (params: AiSuggestionParams): Promise<ApiResponse
     data: params,
   }) as Promise<ApiResponse<AiSuggestionResponse>>;
 };
+
+// 结束面试
+export const endInterview = (roomId: string) => {
+  return request({
+    url: '/api/v1/interview/end',
+    method: 'POST',
+    data: { room_id: roomId },
+  }) as Promise<ApiResponse<void>>;
+};

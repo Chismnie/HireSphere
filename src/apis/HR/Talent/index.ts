@@ -15,22 +15,25 @@ export const getAllTalents = () => {
   });
 };
 
-// GET api/v1/talent/get (Get Interviewed Talents)
 export const getInterviewedTalents = () => {
   return request({
     url: '/api/v1/talent/get', 
     method: 'GET',
     params: {
-        status: 'interviewed'
+        type: 'interview'
     }
   });
 };
 
-export const getTalentReport = (id: string) => {
+export const updateTalentStatus = (talentId: string, status: 'accepted' | 'rejected') => {
   return request({
-    url: `/hr/talent/${id}`,
-    method: 'GET',
-  }) as Promise<ApiResponse<any>>;
+    url: '/api/v1/talent/update_status',
+    method: 'POST',
+    data: {
+      talent_id: talentId,
+      status: status
+    }
+  }) as Promise<ApiResponse<void>>;
 };
 
 // Legacy Mock
@@ -40,4 +43,14 @@ export const getJobDashboard = (params?: { position?: string; status?: string })
     method: 'GET',
     params,
   }) as Promise<ApiResponse<Candidate[]>>;
+};
+
+export const getTalentReport = (id: string) => {
+  return request({
+    url: '/api/v1/talent/get_report',
+    method: 'GET',
+    params: {
+      talent_id: id,
+    },
+  }) as Promise<ApiResponse<any>>;
 };

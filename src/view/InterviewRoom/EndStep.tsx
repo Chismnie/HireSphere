@@ -5,10 +5,11 @@ import { useNavigate } from 'react-router-dom';
 
 interface EndStepProps {
   interviewInfo: any;
+  role?: 'hr' | 'seeker';
 }
 
-const EndStep: React.FC<EndStepProps> = ({ interviewInfo }) => {
-  const isHR = window.location.search.includes('hr-token');
+const EndStep: React.FC<EndStepProps> = ({ interviewInfo, role }) => {
+  const isHR = role === 'hr';
   const navigate = useNavigate();
 
   const handleGoHome = () => {
@@ -17,7 +18,7 @@ const EndStep: React.FC<EndStepProps> = ({ interviewInfo }) => {
 
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50" style={{backgroundImage: "url('/welcome-bg.png')", backgroundSize: 'cover'}}>
-      <Card className="w-full max-w-2xl rounded-2xl shadow-xl border-gray-100 p-8 text-center bg-white/95 backdrop-blur-sm">
+      <Card className="w-full max-w-2xl rounded-2xl shadow-xl border-gray-200 p-8 text-center bg-white/95 backdrop-blur-sm">
         <div className="mb-6 flex justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-green-50 text-green-600">
             <CheckCircleOutlined className="text-4xl" />
@@ -43,7 +44,7 @@ const EndStep: React.FC<EndStepProps> = ({ interviewInfo }) => {
           </div>
         </div>
 
-        {!isHR && (
+        {!isHR ? (
           <Button
             type="primary"
             size="large"
@@ -53,6 +54,24 @@ const EndStep: React.FC<EndStepProps> = ({ interviewInfo }) => {
           >
             返回主页
           </Button>
+        ) : (
+            <div className="flex gap-4 justify-center">
+                <Button
+                    size="large"
+                    onClick={() => navigate('/hr', { state: { activeTab: 'dashboard' } })}
+                    className="h-12 w-40 rounded-full border-gray-300 text-base font-medium hover:text-blue-600 hover:border-blue-600"
+                >
+                    返回职位看板
+                </Button>
+                <Button
+                    type="primary"
+                    size="large"
+                    onClick={() => navigate('/hr', { state: { activeTab: 'talent' } })}
+                    className="h-12 w-40 rounded-full bg-blue-600 text-base font-medium shadow-md hover:bg-blue-700"
+                >
+                    查看人才库
+                </Button>
+            </div>
         )}
       </Card>
     </div>

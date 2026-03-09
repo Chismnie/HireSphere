@@ -43,16 +43,17 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ file, width }) => {
             </div>
           }
           error={
-            <div className="mt-10 text-red-500">
-              PDF 加载失败，请检查文件是否损坏。
+            <div className="mt-10 flex flex-col items-center text-red-500 gap-2">
+              <span>PDF 加载失败</span>
+              <span className="text-xs text-gray-400">(可能是跨域或文件损坏)</span>
             </div>
           }
           className="shadow-lg"
         >
           <Page
             pageNumber={pageNumber}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
+            renderTextLayer={false} // 禁用文本层以优化性能和避免对齐问题
+            renderAnnotationLayer={false} // 禁用注解层
             width={width || 600} // 使用传入的宽度或默认值
             className="bg-white"
           />

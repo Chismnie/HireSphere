@@ -53,7 +53,7 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, role, talentTo
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-3xl rounded-3xl bg-white p-16 shadow-xl border border-gray-100 relative overflow-hidden">
+      <div className="w-full max-w-3xl rounded-3xl bg-white p-16 shadow-xl border border-gray-200 relative overflow-hidden">
         
         {/* 顶部装饰背景圆 */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-50 rounded-full opacity-50 blur-3xl pointer-events-none"></div>
@@ -80,7 +80,7 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, role, talentTo
 
           {/* 信息卡片网格 */}
           <div className="mb-12 grid w-full grid-cols-3 gap-6">
-            <div className="flex flex-col items-start rounded-2xl border border-gray-100 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
+            <div className="flex flex-col items-start rounded-2xl border border-gray-200 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
               <div className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">面试官</div>
               <div className="flex items-center gap-3">
                  <Avatar size="small" icon={<UserOutlined />} className="bg-blue-100 text-blue-600" />
@@ -88,12 +88,12 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, role, talentTo
               </div>
             </div>
             
-            <div className="flex flex-col items-start rounded-2xl border border-gray-100 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
+            <div className="flex flex-col items-start rounded-2xl border border-gray-200 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
               <div className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">公司</div>
               <div className="text-base font-bold text-gray-800 truncate w-full text-left">{interviewInfo.company || 'HireSphere 科技'}</div>
             </div>
             
-            <div className="flex flex-col items-start rounded-2xl border border-gray-100 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
+            <div className="flex flex-col items-start rounded-2xl border border-gray-200 bg-gray-50/50 p-6 transition-all hover:bg-white hover:shadow-md">
               <div className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">预计时长</div>
               <div className="text-base font-bold text-gray-800">45 分钟</div>
             </div>

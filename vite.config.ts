@@ -18,6 +18,11 @@ export default defineConfig({
         secure: false, // 忽略 SSL 证书验证
         ws: true, // 开启 WebSocket 代理
       },
+      '/cos-proxy': {
+        target: 'https://test-1377490072.cos.ap-guangzhou.myqcloud.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/cos-proxy/, ''),
+      },
     },
   },
 });

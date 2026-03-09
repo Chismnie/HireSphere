@@ -69,7 +69,7 @@ const InterviewActionPanel: React.FC = () => {
         {
           id: 'suggestion-1',
           role: 'ai',
-          content: '✨ 如何处理高并发下的 Redis 缓存雪崩与穿透问题？',
+          content: '✨ 你好，我是本场面试的面试官，很高兴你能加入我们的面试。',
           type: 'suggestion',
         },
       ]);

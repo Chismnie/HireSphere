@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Tabs, Alert, Typography, Card, Button, Tooltip } from 'antd';
 import {
   Radar,
@@ -36,7 +36,7 @@ interface InterviewContextPanelProps {
   talentId?: string;
 }
 
-const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId }) => {
+const InterviewContextPanel: React.FC<InterviewContextPanelProps> = React.memo(({ talentId }) => {
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +47,12 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
       setLoading(true);
       getResumeUrl(id).then((res: any) => {
         if (res.code === 200 || res.code === 0) {
-          setResumeUrl(res.data.resume_url);
+          let url = res.data.resume_url;
+          // 开发环境代理处理，解决 Canvas/PDF 跨域问题
+          if (import.meta.env.DEV && url.includes('myqcloud.com')) {
+              url = url.replace(/https?:\/\/[^/]+/, '/cos-proxy');
+          }
+          setResumeUrl(url);
         } else {
             console.warn('获取简历失败:', res.message);
         }
@@ -59,7 +64,7 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
     }
   }, [talentId]);
 
-  const ResumeTab = () => (
+  const resumeTabContent = useMemo(() => (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
       {loading ? (
           <div className="flex flex-1 flex-col items-center justify-center p-8">
@@ -111,9 +116,9 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
       </div>
       )}
     </div>
-  );
+  ), [loading, resumeUrl]);
 
-  const AIInsightTab = () => (
+  const aiInsightTabContent = useMemo(() => (
     <div className="h-full space-y-6 overflow-y-auto p-1 pr-2 pb-10 custom-scrollbar">
       {/* Risk Alert Section */}
       <div className="space-y-3">
@@ -191,7 +196,7 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
         </div>
       </div>
     </div>
-  );
+  ), []);
 
   return (
     <div className="flex h-full flex-col bg-white p-4 overflow-hidden">
@@ -207,7 +212,7 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
                 应聘简历
               </span>
             ),
-            children: <div className="h-full overflow-hidden"><ResumeTab /></div>,
+            children: <div className="h-full overflow-hidden">{resumeTabContent}</div>,
           },
           {
             key: '2',
@@ -217,7 +222,7 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
                 AI 洞察
               </span>
             ),
-            children: <div className="h-full overflow-hidden flex flex-col"><AIInsightTab /></div>,
+            children: <div className="h-full overflow-hidden flex flex-col">{aiInsightTabContent}</div>,
           },
         ]}
         // 确保 Tab 内容区域占满剩余高度
@@ -230,6 +235,6 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = ({ talentId 
       />
     </div>
   );
-};
+});
 
 export default InterviewContextPanel;

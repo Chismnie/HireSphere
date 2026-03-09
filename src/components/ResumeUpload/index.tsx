@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Button, message, Modal, List, Tooltip } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import {
   InboxOutlined,
   EyeOutlined,
@@ -42,6 +43,7 @@ interface UploadedFileItem {
 import useUserStore from '@/store/modules/user';
 
 const ResumeUpload: React.FC = () => {
+  const navigate = useNavigate();
   const { setId } = useUserStore();
   const [fileList, setFileList] = useState<UploadedFileItem[]>([]);
   const [viewMode, setViewMode] = useState<'upload' | 'loading' | 'list'>(
@@ -101,7 +103,7 @@ const ResumeUpload: React.FC = () => {
                 okText: '去面试看板查看',
                 onOk: () => {
                     // Navigate to dashboard
-                    window.location.href = '/hr'; // Or use useNavigate if available
+                    navigate('/hr', { state: { activeTab: 'dashboard' } });
                 }
             });
 

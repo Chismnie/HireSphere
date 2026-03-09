@@ -123,7 +123,7 @@ const InterviewRoom: React.FC = () => {
   }
 
   if (step === 'end' && interviewInfo) {
-    return <EndStep interviewInfo={interviewInfo} />;
+    return <EndStep interviewInfo={interviewInfo} role={role} />;
   }
 
   return null;

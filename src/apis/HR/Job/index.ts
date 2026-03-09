@@ -18,9 +18,6 @@ export const getJobProfiles = () => {
   return request({
     url: '/api/v1/job_profile/get',
     method: 'GET',
-    params: {
-      timestamp: Date.now()
-    }
   }) as Promise<ApiResponse<{ list: JobProfileData[] }>>;
 };
 

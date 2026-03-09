@@ -4,6 +4,8 @@ import {
   UserOutlined,
   ArrowRightOutlined,
   CheckCircleOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { getAllTalents } from '@/apis/HR/Talent';
 import { createInterviewRoom } from '@/apis/HR/Interview';
@@ -31,6 +33,10 @@ const JobDashboard: React.FC = () => {
         const res: any = await getAllTalents();
         if (res.code === 200 || res.code === 0) {
             const list = res.data?.list || [];
+            // Get local storage overrides
+            const localStatusStr = localStorage.getItem('local_talent_status');
+            const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
+
             const mapped = list.map((item: any) => {
                 let status = 'pending';
                 // Normalize status from backend
@@ -39,6 +45,11 @@ const JobDashboard: React.FC = () => {
                 if (backendStatus === '已录用' || backendStatus === 'accepted') status = 'accepted';
                 if (backendStatus === '已淘汰' || backendStatus === 'rejected') status = 'rejected';
                 
+                // Override with local status if exists
+                if (localStatusMap[item.talent_id]) {
+                    status = localStatusMap[item.talent_id];
+                }
+
                 // Parse advantages which might be a string or array
                 let tags: string[] = [];
                 if (item.core_advantages) {
@@ -113,21 +124,45 @@ const JobDashboard: React.FC = () => {
     }
   };
 
-  const handleAccept = (name: string) => {
+  const handleAccept = (candidate: Candidate) => {
     Modal.confirm({
       title: '确认录用',
-      content: `确定要录用 ${name} 吗？`,
+      content: `确定要录用 ${candidate.name} 吗？`,
       icon: <CheckCircleOutlined className="text-green-600" />,
-      onOk: () => message.success('已标记为录用'),
+      onOk: () => {
+          // Frontend-only update
+          const newStatus = 'accepted';
+          setCandidates(prev => prev.map(c => c.id === candidate.id ? { ...c, status: newStatus } : c));
+          
+          // Persist to localStorage
+          const localStatusStr = localStorage.getItem('local_talent_status');
+          const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
+          localStatusMap[candidate.id] = newStatus;
+          localStorage.setItem('local_talent_status', JSON.stringify(localStatusMap));
+          
+          message.success('已标记为录用');
+      },
     });
   };
 
-  const handleReject = (name: string) => {
+  const handleReject = (candidate: Candidate) => {
     Modal.confirm({
       title: '确认淘汰',
-      content: `确定要淘汰 ${name} 吗？`,
+      content: `确定要淘汰 ${candidate.name} 吗？`,
       okType: 'danger',
-      onOk: () => message.success('已归档淘汰'),
+      onOk: () => {
+          // Frontend-only update
+          const newStatus = 'rejected';
+          setCandidates(prev => prev.map(c => c.id === candidate.id ? { ...c, status: newStatus } : c));
+          
+          // Persist to localStorage
+          const localStatusStr = localStorage.getItem('local_talent_status');
+          const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
+          localStatusMap[candidate.id] = newStatus;
+          localStorage.setItem('local_talent_status', JSON.stringify(localStatusMap));
+          
+          message.success('已归档淘汰');
+      },
     });
   };
 
@@ -233,21 +268,43 @@ const JobDashboard: React.FC = () => {
                 <div className="flex flex-col items-end gap-2">
                     <span className="text-sm font-medium text-gray-500">已完成面试</span>
                     <div className="flex gap-2">
-                        <Button 
-                            size="small" 
-                            className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300"
-                            onClick={() => handleAccept(candidate.name)}
-                        >
-                            录用
-                        </Button>
-                        <Button 
-                            size="small" 
-                            danger 
-                            className="bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300"
-                            onClick={() => handleReject(candidate.name)}
-                        >
-                            淘汰
-                        </Button>
+                        {candidate.status === 'interviewed' ? (
+                          <>
+                            <Button 
+                                icon={<CheckOutlined />}
+                                className="text-blue-600 border-blue-600 hover:text-white hover:bg-blue-600 hover:border-blue-600 rounded-lg px-4 h-9 shadow-sm transition-all"
+                                onClick={() => handleAccept(candidate)}
+                            >
+                                录用
+                            </Button>
+                            <Button 
+                                danger 
+                                icon={<CloseOutlined />}
+                                className="text-red-500 border-red-500 hover:text-white hover:bg-red-500 hover:border-red-500 rounded-lg px-4 h-9 shadow-sm transition-all"
+                                onClick={() => handleReject(candidate)}
+                            >
+                                淘汰
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                             <Button 
+                                icon={<CheckOutlined />}
+                                className={`${candidate.status === 'accepted' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'text-gray-400 border-gray-200 hover:text-blue-600 hover:border-blue-600'} rounded-lg px-4 h-9 shadow-sm transition-all`}
+                                onClick={() => handleAccept(candidate)}
+                            >
+                                录用
+                            </Button>
+                            <Button 
+                                danger 
+                                icon={<CloseOutlined />}
+                                className={`${candidate.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200' : 'text-gray-400 border-gray-200 hover:text-red-600 hover:border-red-600'} rounded-lg px-4 h-9 shadow-sm transition-all`}
+                                onClick={() => handleReject(candidate)}
+                            >
+                                淘汰
+                            </Button>
+                          </div>
+                        )}
                     </div>
                 </div>
               )}

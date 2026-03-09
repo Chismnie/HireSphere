@@ -67,7 +67,7 @@ const JobProfilePage: React.FC = () => {
   const [newIndicatorCategory, setNewIndicatorCategory] = useState('');
 
   // 获取数据
-  const fetchData = async () => {
+  const fetchData = async (targetId?: string) => {
       try {
           const res: any = await getJobProfiles();
           if (res.code === 200 || res.code === 0) {
@@ -86,12 +86,37 @@ const JobProfilePage: React.FC = () => {
               }));
               
               setJobList(mappedList);
-              if (mappedList.length > 0 && !activeJobId) {
+              
+              const idToUse = targetId || activeJobId;
+              
+              if (mappedList.length > 0 && !idToUse) {
                   setActiveJobId(mappedList[0].id);
                   setCurrentProfile(mappedList[0]);
-              } else if (activeJobId) {
-                  const current = mappedList.find(j => j.id === activeJobId);
-                  if (current) setCurrentProfile(current);
+              } else if (idToUse) {
+                  const current = mappedList.find(j => j.id === idToUse);
+                  if (current) {
+                      setActiveJobId(current.id);
+                      setCurrentProfile(current);
+                  } else {
+                      // 如果当前选中的 ID 在列表中找不到（可能是 temp ID），尝试按名称匹配
+                      // 或者默认选中第一个
+                      if (currentProfile && idToUse.startsWith('temp-')) {
+                           const matchByName = mappedList.find(j => j.name === currentProfile.name);
+                           if (matchByName) {
+                               setActiveJobId(matchByName.id);
+                               setCurrentProfile(matchByName);
+                               return;
+                           }
+                      }
+                      
+                      if (mappedList.length > 0) {
+                           setActiveJobId(mappedList[0].id);
+                           setCurrentProfile(mappedList[0]);
+                      } else {
+                           setActiveJobId('');
+                           setCurrentProfile(null);
+                      }
+                  }
               }
           }
       } catch (error) {
@@ -116,14 +141,20 @@ const JobProfilePage: React.FC = () => {
   const handleSaveProfile = async () => {
       if (!currentProfile) return;
       
-      const payload: JobProfileData = {
-          job_profile_id: currentProfile.id.startsWith('temp-') ? undefined : currentProfile.id,
-          job_title: currentProfile.name,
-          competencies: currentProfile.indicators.map(ind => ({
+      // 如果是新建且没有指标，则发送空数组，由后端自动填充
+      // 如果已有指标，则正常发送
+      const competencies = currentProfile.indicators.length > 0 
+          ? currentProfile.indicators.map(ind => ({
               name: ind.name,
               type: ind.category,
               weight: ind.value
-          })),
+          })) 
+          : [];
+
+      const payload: JobProfileData = {
+          job_profile_id: currentProfile.id.startsWith('temp-') ? undefined : currentProfile.id,
+          job_title: currentProfile.name,
+          competencies: competencies,
           red_line_condition: currentProfile.redLines,
           ai_adjustment_suggestion: currentProfile.aiSuggestion
       };
@@ -131,8 +162,16 @@ const JobProfilePage: React.FC = () => {
       try {
           const res: any = await saveJobProfile(payload);
           if (res.code === 200 || res.code === 0) {
-              message.success('保存成功');
-              fetchData(); // 刷新列表
+              message.success('保存成功，画像已更新');
+              // 如果是新建（temp ID），需要更新 activeJobId 为后端返回的 ID
+              const savedId = res.data?.job_profile_id;
+              if (currentProfile.id.startsWith('temp-') && savedId) {
+                  // 传递新 ID 给 fetchData
+                  fetchData(savedId);
+              } else {
+                  // 如果是更新，也重新获取一下，以获取后端可能更新的字段（如自动生成的指标）
+                  fetchData(currentProfile.id);
+              }
           } else {
               message.error(res.message || '保存失败');
           }
@@ -147,11 +186,17 @@ const JobProfilePage: React.FC = () => {
           message.warning('请输入岗位名称');
           return;
       }
+
+      // 检查岗位名称是否重复
+      if (jobList.some(job => job.name === newJobTitle.trim())) {
+          message.error('岗位名称已存在，请使用其他名称');
+          return;
+      }
       
       const newJob: JobProfile = {
           id: `temp-${Date.now()}`, // 临时 ID
-          name: newJobTitle,
-          indicators: [],
+          name: newJobTitle.trim(),
+          indicators: [], // 后端会自动填充
           redLines: [],
           aiSuggestion: '暂无 AI 建议',
       };
@@ -161,7 +206,7 @@ const JobProfilePage: React.FC = () => {
       setCurrentProfile(newJob);
       setIsJobModalOpen(false);
       setNewJobTitle('');
-      message.success('新岗位已创建，请配置画像并保存');
+      message.success('新岗位已创建，点击保存以自动生成画像');
   };
 
   const handleDeleteJob = (e: React.MouseEvent, id: string) => {
@@ -386,7 +431,7 @@ const JobProfilePage: React.FC = () => {
                 添加指标
               </Button>
               <div className="flex gap-2">
-                <Button icon={<SaveOutlined />} type="primary" size="small" className="bg-blue-600 shadow-md shadow-blue-200 text-xs">
+                <Button icon={<SaveOutlined />} type="primary" size="small" className="bg-blue-600 shadow-md shadow-blue-200 text-xs" onClick={handleSaveProfile}>
                     保存
                 </Button>
                 <Button icon={<ReloadOutlined />} size="small" onClick={() => setActiveJobId(activeJobId)} className="text-xs">
