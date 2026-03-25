@@ -16,59 +16,84 @@ const InterviewRoom: React.FC = () => {
     const init = async () => {
       try {
         const params = new URLSearchParams(window.location.search);
-        const roomId = params.get('roomId');
+        const roomIdFromUrl = params.get('roomId');
+        const tokenFromUrl = params.get('token');
         
-        // 尝试获取各种 token
-        const urlToken = params.get('token');
-        const urlTalentToken = params.get('talentToken');
-        const urlTalentId = params.get('talentId'); // 获取 talentId
-        const localToken = localStorage.getItem('token');
-        
-        // 核心逻辑：判断角色
-        // 1. 如果 URL 中有 token 且与 talentToken 相等 -> Seeker
-        // 2. 如果 URL 中有 token 且包含 'talent' -> Seeker (兼容旧逻辑)
-        // 3. 否则默认为 HR (使用 localToken)
-        
-        let activeToken = '';
-        let currentRole: 'hr' | 'seeker' = 'hr';
-
-        if (urlToken) {
-            // 如果 urlToken 等于 urlTalentToken，或者是 seeker 格式
-            if ((urlTalentToken && urlToken === urlTalentToken) || urlToken.includes('talent')) {
-                currentRole = 'seeker';
-                activeToken = urlToken;
-            } else {
-                // URL 中有 token 但不是 seeker，可能是 HR 的 token (虽然不推荐 URL 传 HR token)
-                currentRole = 'hr';
-                activeToken = urlToken;
-            }
-        } else if (localToken) {
-            // 没有 URL token，使用本地 token -> HR
-            currentRole = 'hr';
-            activeToken = localToken;
+        // 1. 优先从 sessionStorage 恢复状态（单点来源）
+        const savedSession = sessionStorage.getItem('interview_session');
+        if (savedSession) {
+          const { token, interviewId, role: savedRole, interviewInfo: savedInfo } = JSON.parse(savedSession);
+          // 如果 URL 没传 roomId 或者匹配，则直接恢复
+          if (!roomIdFromUrl || roomIdFromUrl === interviewId) {
+            console.log('从 sessionStorage 恢复面试会话，跳过重复校验');
+            setRole(savedRole as 'hr' | 'seeker');
+            setInterviewInfo(savedInfo);
+            setStep('welcome');
+            return;
+          }
         }
 
-        if (!roomId || !activeToken) {
-          throw new Error('无效的面试链接：缺少必要参数');
-        }
+        // 2. 检查 URL 中是否有 token 参数（双入口支持：作为被面试者进入）
+        if (tokenFromUrl && roomIdFromUrl) {
+          console.log('检测到 URL Token，正在自动校验身份...');
+          const info = await validateInterview(roomIdFromUrl, tokenFromUrl);
+          const currentRole: 'hr' | 'seeker' = 'seeker'; 
 
-        // 验证权限 (API 调用)
-        const info = await validateInterview(roomId, activeToken);
-        
-        setRole(currentRole);
-        if (urlTalentToken) {
-            setTalentToken(urlTalentToken);
-        }
-
-        setInterviewInfo({
+          const fullInfo = {
             ...info,
-            roomId,
-            token: activeToken,
-            talentId: urlTalentId || undefined // 将 talentId 放入 interviewInfo
-        });
-        setStep('welcome');
+            roomId: roomIdFromUrl,
+            token: tokenFromUrl
+          };
+
+          // 统一存储到 sessionStorage
+          sessionStorage.setItem('interview_session', JSON.stringify({
+            token: tokenFromUrl,
+            interviewId: roomIdFromUrl,
+            role: currentRole,
+            interviewInfo: fullInfo
+          }));
+
+          // URL 自动清理
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('token');
+          window.history.replaceState({}, '', newUrl.toString());
+
+          setRole(currentRole);
+          setInterviewInfo(fullInfo);
+          setStep('welcome');
+          return;
+        }
+
+        // 3. 走原有逻辑：HR 从本地存储获取 Token
+        const localToken = localStorage.getItem('token');
+        if (roomIdFromUrl && localToken) {
+          console.log('尝试以 HR 身份进入面试间');
+          const info = await validateInterview(roomIdFromUrl, localToken);
+          const currentRole: 'hr' | 'seeker' = 'hr';
+
+          const fullInfo = {
+            ...info,
+            roomId: roomIdFromUrl,
+            token: localToken
+          };
+
+          // 同样存入 sessionStorage 以便刷新持久化
+          sessionStorage.setItem('interview_session', JSON.stringify({
+            token: localToken,
+            interviewId: roomIdFromUrl,
+            role: currentRole,
+            interviewInfo: fullInfo
+          }));
+
+          setRole(currentRole);
+          setInterviewInfo(fullInfo);
+          setStep('welcome');
+          return;
+        }
+
+        throw new Error('无效的面试链接：缺少必要参数或权限不足');
       } catch (err: any) {
-        console.error(err);
+        console.error('面试间初始化失败:', err);
         setErrorMsg(err.message || '无法进入面试间');
         setStep('error');
       }

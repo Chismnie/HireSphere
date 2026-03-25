@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://frp-ski.com:46285',
+        target: 'https://486b59fe.r39.cpolar.top',
         changeOrigin: true,
         secure: false, // 忽略 SSL 证书验证
         ws: true, // 开启 WebSocket 代理

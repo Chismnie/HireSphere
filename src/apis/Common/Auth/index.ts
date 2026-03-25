@@ -1,6 +1,6 @@
 import { request } from '@/utils/request';
 import type { ApiResponse } from '@/apis/types';
-import type { LoginParams, UserInfo } from './type';
+import type { LoginParams, UserInfo, RegisterParams } from './type';
 
 export * from './type';
 
@@ -12,12 +12,20 @@ export const login = (data: LoginParams) => {
   }) as Promise<ApiResponse<UserInfo>>;
 };
 
-export const register = (data: LoginParams) => {
+export const register = (data: RegisterParams) => {
   return request({
-    url: '/auth/register',
+    url: '/api/v1/user/register',
     method: 'POST',
     data,
-  }) as Promise<ApiResponse<UserInfo>>;
+  }) as Promise<ApiResponse<void>>;
+};
+
+export const sendCode = (email: string) => {
+  return request({
+    url: '/api/v1/user/sendcode',
+    method: 'POST',
+    data: { email },
+  }) as Promise<ApiResponse<void>>;
 };
 
 export const logout = () => {
