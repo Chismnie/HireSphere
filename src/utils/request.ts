@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-// 在开发环境下使用代理（相对路径），生产环境可能需要具体配置
-// 如果配置了 vite proxy，这里不需要完整的 baseURL
-const baseURL = ''; 
+// 注册和验证码服务地址
+export const AUTH_BASE_URL = 'https://486b59fe.r39.cpolar.top';
+// 其他所有服务的默认地址
+export const DEFAULT_BASE_URL = 'https://frp-ski.com:46285';
+
+const baseURL = DEFAULT_BASE_URL; 
 
 
 interface QueueItem {
@@ -84,6 +87,7 @@ class RequestQueue {
 }
 
 const axiosInstance = axios.create({
+  baseURL: baseURL, // 使用 DEFAULT_BASE_URL 作为默认地址
   timeout: 1280000 * 1000, 
 });
 

@@ -12,8 +12,18 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '/api/v1/user/register': {
         target: 'https://486b59fe.r39.cpolar.top',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/user/sendcode': {
+        target: 'https://486b59fe.r39.cpolar.top',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api': {
+        target: 'https://frp-ski.com:46285',
         changeOrigin: true,
         secure: false, // 忽略 SSL 证书验证
         ws: true, // 开启 WebSocket 代理

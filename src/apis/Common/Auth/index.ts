@@ -1,4 +1,4 @@
-import { request } from '@/utils/request';
+import { request, AUTH_BASE_URL } from '@/utils/request';
 import type { ApiResponse } from '@/apis/types';
 import type { LoginParams, UserInfo, RegisterParams } from './type';
 
@@ -14,6 +14,7 @@ export const login = (data: LoginParams) => {
 
 export const register = (data: RegisterParams) => {
   return request({
+    baseURL: AUTH_BASE_URL,
     url: '/api/v1/user/register',
     method: 'POST',
     data,
@@ -22,6 +23,7 @@ export const register = (data: RegisterParams) => {
 
 export const sendCode = (email: string) => {
   return request({
+    baseURL: AUTH_BASE_URL,
     url: '/api/v1/user/sendcode',
     method: 'POST',
     data: { email },
