@@ -112,9 +112,9 @@ const JobDashboard: React.FC = () => {
                 return;
             }
             
-            // 将 room_id, hr_token, talent_token 一起传递给面试间
-            // 面试间会根据 token 自动判断角色，并使用 talent_token 生成求职者链接
-            window.open(`/interview-room?roomId=${room_id}&token=${hrToken}&talentToken=${talent_token}&talentId=${id}`, '_blank');
+            // 将 room_id, talent_token 一起传递给面试间
+            // 不再在 URL 中传递 HR 自己的 token，面试间会从 localStorage 中获取
+            window.open(`/interview-room?roomId=${room_id}&talentToken=${talent_token}&talentId=${id}`, '_blank');
         } else {
             message.error(res.message || '创建面试间失败');
         }

@@ -56,8 +56,14 @@ const ResumeDiagnosis: React.FC = () => {
     const talentId = id || '1';
     if (talentId) {
       getResumeUrl(talentId).then((res: any) => {
-        if (res.code === 200 || res.code === 0) {
-          setResumeUrl(res.data.resume_url);
+        const resCode = res.Code ?? res.code;
+        const resData = res.Data ?? res.data;
+        const resMsg = res.Msg ?? res.message;
+
+        if ((resCode === 200 || resCode === 0) && resData?.resume_url) {
+          setResumeUrl(resData.resume_url);
+        } else {
+          console.warn('简历未找到或获取失败:', resMsg);
         }
       }).catch(console.error);
     }

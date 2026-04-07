@@ -41,27 +41,35 @@ const InterviewContextPanel: React.FC<InterviewContextPanelProps> = React.memo((
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // 强制把 talentId 转为字符串，防止 props 传递数字导致类型不匹配
-    const id = String(talentId);
-    if (talentId && id !== 'undefined') {
-      setLoading(true);
-      getResumeUrl(id).then((res: any) => {
-        if (res.code === 200 || res.code === 0) {
-          let url = res.data.resume_url;
-          // 开发环境代理处理，解决 Canvas/PDF 跨域问题
-          if (import.meta.env.DEV && url.includes('myqcloud.com')) {
-              url = url.replace(/https?:\/\/[^/]+/, '/cos-proxy');
-          }
-          setResumeUrl(url);
-        } else {
-            console.warn('获取简历失败:', res.message);
-        }
-      })
-      .catch(err => {
-          console.error('获取简历异常:', err);
-      })
-      .finally(() => setLoading(false));
+    if (!talentId || String(talentId) === 'undefined' || String(talentId) === 'null') {
+      console.warn('InterviewContextPanel: talentId 缺失，跳过简历加载');
+      return;
     }
+
+    const id = String(talentId);
+    setLoading(true);
+    getResumeUrl(id).then((res: any) => {
+      const resCode = res.Code ?? res.code;
+      const resData = res.Data ?? res.data;
+      const resMsg = res.Msg ?? res.message;
+
+      if ((resCode === 200 || resCode === 0) && resData?.resume_url) {
+        let url = resData.resume_url;
+        // 开发环境代理处理，解决 Canvas/PDF 跨域问题
+        if (import.meta.env.DEV && url.includes('myqcloud.com')) {
+            url = url.replace(/https?:\/\/[^/]+/, '/cos-proxy');
+        }
+        setResumeUrl(url);
+      } else {
+          console.warn('获取简历失败:', resMsg);
+          setResumeUrl(null);
+      }
+    })
+    .catch(err => {
+        console.error('获取简历异常:', err);
+        setResumeUrl(null);
+    })
+    .finally(() => setLoading(false));
   }, [talentId]);
 
   const resumeTabContent = useMemo(() => (

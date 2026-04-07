@@ -1,11 +1,10 @@
 import axios from 'axios';
 
-// 注册和验证码服务地址
-export const AUTH_BASE_URL = 'https://486b59fe.r39.cpolar.top';
-// 其他所有服务的默认地址
+// 所有服务的默认地址
 export const DEFAULT_BASE_URL = 'https://frp-ski.com:46285';
 
-const baseURL = DEFAULT_BASE_URL; 
+// 在开发环境下使用相对路径，以便通过 Vite 代理解决 CORS 问题
+const baseURL = ''; 
 
 
 interface QueueItem {

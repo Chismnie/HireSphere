@@ -22,20 +22,29 @@ const InterviewRoom: React.FC = () => {
         // 1. 优先从 sessionStorage 恢复状态（单点来源）
         const savedSession = sessionStorage.getItem('interview_session');
         if (savedSession) {
-          const { token, interviewId, role: savedRole, interviewInfo: savedInfo } = JSON.parse(savedSession);
+          const { token, interviewId, role: savedRole, interviewInfo: savedInfo, talentToken: savedTalentToken, talentId: savedTalentId } = JSON.parse(savedSession);
           // 如果 URL 没传 roomId 或者匹配，则直接恢复
           if (!roomIdFromUrl || roomIdFromUrl === interviewId) {
             console.log('从 sessionStorage 恢复面试会话，跳过重复校验');
             setRole(savedRole as 'hr' | 'seeker');
-            setInterviewInfo(savedInfo);
+            
+            // 确保 savedInfo 里面包含 talentId，如果没有，则手动补上
+            const fullInfo = {
+                ...savedInfo,
+                talentId: savedTalentId || savedInfo.talentId
+            };
+            
+            setInterviewInfo(fullInfo);
+            if (savedTalentToken) setTalentToken(savedTalentToken);
             setStep('welcome');
             return;
           }
         }
 
-        // 2. 检查 URL 中是否有 token 参数（双入口支持：作为被面试者进入）
+        // 2. 核心逻辑：判断角色并验证权限
+        // 情况 A：URL 中有 token -> 视为被面试者/求职者 (Seeker)
         if (tokenFromUrl && roomIdFromUrl) {
-          console.log('检测到 URL Token，正在自动校验身份...');
+          console.log('检测到 URL Token，正在以候选人身份校验...');
           const info = await validateInterview(roomIdFromUrl, tokenFromUrl);
           const currentRole: 'hr' | 'seeker' = 'seeker'; 
 
@@ -50,22 +59,28 @@ const InterviewRoom: React.FC = () => {
             token: tokenFromUrl,
             interviewId: roomIdFromUrl,
             role: currentRole,
-            interviewInfo: fullInfo
+            interviewInfo: fullInfo,
+            talentToken: tokenFromUrl // Seeker 自己的 token 就是 talentToken
           }));
 
-          // URL 自动清理
+          // URL 自动清理（隐藏敏感 token）
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.delete('token');
+          newUrl.searchParams.delete('talentToken'); // 清理冗余参数
           window.history.replaceState({}, '', newUrl.toString());
 
           setRole(currentRole);
           setInterviewInfo(fullInfo);
+          setTalentToken(tokenFromUrl);
           setStep('welcome');
           return;
         }
 
-        // 3. 走原有逻辑：HR 从本地存储获取 Token
+        // 情况 B：URL 无 token -> 尝试以 HR 身份（使用本地存储的 Token）进入
         const localToken = localStorage.getItem('token');
+        const urlTalentToken = params.get('talentToken');
+        const urlTalentId = params.get('talentId');
+        
         if (roomIdFromUrl && localToken) {
           console.log('尝试以 HR 身份进入面试间');
           const info = await validateInterview(roomIdFromUrl, localToken);
@@ -74,19 +89,29 @@ const InterviewRoom: React.FC = () => {
           const fullInfo = {
             ...info,
             roomId: roomIdFromUrl,
-            token: localToken
+            token: localToken,
+            talentId: urlTalentId || info.talentId // 优先使用 URL 中的 talentId
           };
 
-          // 同样存入 sessionStorage 以便刷新持久化
+          // 存储到 sessionStorage
           sessionStorage.setItem('interview_session', JSON.stringify({
             token: localToken,
             interviewId: roomIdFromUrl,
             role: currentRole,
-            interviewInfo: fullInfo
+            interviewInfo: fullInfo,
+            talentToken: urlTalentToken,
+            talentId: urlTalentId || info.talentId
           }));
+
+          // URL 自动清理
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('talentToken'); 
+          newUrl.searchParams.delete('talentId');
+          window.history.replaceState({}, '', newUrl.toString());
 
           setRole(currentRole);
           setInterviewInfo(fullInfo);
+          if (urlTalentToken) setTalentToken(urlTalentToken);
           setStep('welcome');
           return;
         }

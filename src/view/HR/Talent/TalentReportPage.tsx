@@ -34,19 +34,28 @@ const TalentReportPage: React.FC = () => {
     if (id) {
       // 获取人才报告数据
       getTalentReport(id).then((res: any) => {
-          if (res.code === 200 || res.code === 0) {
-              setReport(res.data);
+          const resCode = res.Code ?? res.code;
+          const resData = res.Data ?? res.data;
+          
+          if (resCode === 200 || resCode === 0) {
+              setReport(resData);
           }
       }).catch(console.error);
 
       // 获取简历
       getResumeUrl(id).then((res: any) => {
-        if (res.code === 200 || res.code === 0) {
-          let url = res.data.resume_url;
+        const resCode = res.Code ?? res.code;
+        const resData = res.Data ?? res.data;
+        const resMsg = res.Msg ?? res.message;
+
+        if ((resCode === 200 || resCode === 0) && resData?.resume_url) {
+          let url = resData.resume_url;
           if (import.meta.env.DEV && url.includes('myqcloud.com')) {
               url = url.replace(/https?:\/\/[^/]+/, '/cos-proxy');
           }
           setResumeUrl(url);
+        } else {
+            console.warn('获取简历失败:', resMsg);
         }
       }).catch(console.error);
     }
@@ -100,16 +109,28 @@ const TalentReportPage: React.FC = () => {
   const reconstructedRecords: any[] = [];
   let currentQ = '';
   
+  // 修改：更加稳健的本地记录重建逻辑
   parsedChatHistory.forEach((msg: any) => {
-      if (msg.role === 'HR') {
+      // 兼容 msg.role 或 msg.sender 字段
+      const isHRMsg = msg.role === 'HR' || msg.name === '面试官' || (msg.sender === 'me' && msg.name !== '我');
+      const isSeekerMsg = msg.role === 'Seeker' || msg.name === '候选人' || msg.name === '我' || (msg.sender === 'me' && msg.name === '我');
+
+      if (isHRMsg) {
           currentQ = msg.content;
-      } else if (msg.role === 'Seeker' && currentQ) {
+      } else if (isSeekerMsg && currentQ) {
           reconstructedRecords.push({
               question: currentQ,
               answer: msg.content,
               ai_analysis: '' // No analysis for local history
           });
           currentQ = ''; // Reset after pairing
+      } else if (isSeekerMsg && !currentQ) {
+          // 如果没有问题直接有回答，也强行记录下来，避免丢失
+          reconstructedRecords.push({
+              question: '追问/补充',
+              answer: msg.content,
+              ai_analysis: ''
+          });
       }
   });
 
@@ -126,9 +147,14 @@ const TalentReportPage: React.FC = () => {
       education: report?.education || '本科', // Default if missing
       radar_chart: report?.radar_chart || mockRadarData,
       ai_evaluation: report?.ai_evaluation || '正在生成AI评估报告...',
+      
+      // 兼容后端不同字段名：可能叫 interview_records 或 interview_record
       interview_records: (report?.interview_records && report.interview_records.length > 0) 
           ? report.interview_records 
-          : (reconstructedRecords.length > 0 ? reconstructedRecords : []),
+          : ((report?.interview_record && report.interview_record.length > 0)
+              ? report.interview_record
+              : (reconstructedRecords.length > 0 ? reconstructedRecords : [])),
+              
       duration: report?.duration || '45min'
   };
 

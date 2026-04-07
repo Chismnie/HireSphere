@@ -123,17 +123,19 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, role, talentTo
             </div>
           </div>
 
-          {/* 底部链接分享区 (仅 HR 可见) */}
-          {isHR && (
+          {/* 底部链接分享区 (始终可见，方便复制分享) */}
           <div className="mt-12 w-full pt-8 border-t border-gray-100">
              <div className="flex flex-col items-center gap-4">
-                <Text type="secondary" className="text-sm font-medium">分享面试链接给候选人</Text>
+                <Text type="secondary" className="text-sm font-medium">
+                  {isHR ? '分享面试链接给候选人' : '您的专属面试进入链接'}
+                </Text>
                 
                 <div className="flex w-full max-w-xl gap-3 items-center">
                     <div className="flex-1 relative group">
                         <Input 
                             readOnly 
                             value={seekerLink} 
+                            placeholder={talentToken ? "" : "正在生成链接..."}
                             className="h-11 rounded-xl bg-gray-50 border-gray-200 text-gray-500 text-sm pl-4 pr-10 focus:bg-white transition-all"
                         />
                          <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -146,23 +148,17 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ interviewInfo, role, talentTo
                         onClick={handleCopyLink}
                         className="h-11 px-6 rounded-xl border-blue-100 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:border-blue-200 font-medium transition-colors"
                     >
-                        复制
+                        复制链接
                     </Button>
                 </div>
 
-                <div className="flex justify-center w-full">
-                  <Button 
-                      type="link" 
-                      size="small" 
-                      className="text-gray-400 hover:text-blue-600 text-xs flex items-center gap-1 mt-2"
-                      onClick={handleOpenSeekerPage}
-                  >
-                      <LinkOutlined /> 以求职者视角打开 (测试用)
-                  </Button>
-               </div>
+                {isHR && (
+                  <div className="flex justify-center w-full">
+                    {/* 已移除“以求职者视角打开”链接 */}
+                  </div>
+                )}
             </div>
           </div>
-          )}
 
         </div>
       </div>
