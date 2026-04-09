@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 所有服务的默认地址
-export const DEFAULT_BASE_URL = 'https://frp-ski.com:46285';
+export const DEFAULT_BASE_URL = 'http://117.72.99.11:8080';
 
 // 在开发环境下使用相对路径，以便通过 Vite 代理解决 CORS 问题
 const baseURL = ''; 
