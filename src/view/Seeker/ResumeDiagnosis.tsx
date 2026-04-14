@@ -19,7 +19,7 @@ const { Title, Text, Paragraph } = Typography;
 // Mock Data
 const analysisData = {
   score: 85,
-  targetPosition: '产品经理',
+  targetPosition: 'Java后端开发',
   coreCompetency: 'Spring Cloud, Redis 集群, 高并发 QPS 优化经验非常扎实。',
   riskPoint: '2022年存在6个月空窗期，建议在面试前准备好合理的离职理由说明。',
   quantSuggestion: "项目描述中'负责架构设计'较模糊，建议改为'主导核心模块重构，QPS提升150%'。",

@@ -59,6 +59,16 @@ const SeekerDashboard: React.FC = () => {
     }
   }, [location.state]);
 
+  // 监听 Tab 切换事件 (用于组件内部触发)
+  useEffect(() => {
+    const handleSwitchTab = (e: any) => {
+      const { tab } = e.detail;
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener('switch_seeker_tab', handleSwitchTab);
+    return () => window.removeEventListener('switch_seeker_tab', handleSwitchTab);
+  }, []);
+
   const handleLogout = () => {
     clearUserInfo();
     navigate('/', { replace: true });
@@ -75,7 +85,7 @@ const SeekerDashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'resume':
-        return <ResumeUpload />;
+        return <ResumeUpload isSeeker />;
       case 'diagnosis':
         return <ResumeDiagnosis />;
       case 'mock':

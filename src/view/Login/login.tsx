@@ -109,6 +109,8 @@ const Login: React.FC = () => {
         if (activeTab === 'seeker') {
           navigate('/home', { replace: true });
         } else {
+          // 登录后强制定向到简历处理中心
+          localStorage.setItem('hr_active_tab', 'resume');
           navigate('/hr', { replace: true });
         }
       } else {

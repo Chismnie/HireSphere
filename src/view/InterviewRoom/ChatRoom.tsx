@@ -3,7 +3,8 @@ import { Button, Tag, message, Avatar } from 'antd';
 import { wsService } from '@/utils/websocket';
 import InterviewContextPanel from '../HR/Interview/InterviewContextPanel';
 import { addMessageTag, getAiSuggestion, endInterview } from '@/apis/HR/Interview';
-import { RobotOutlined, CheckCircleOutlined, WarningOutlined, BulbOutlined, UserOutlined } from '@ant-design/icons';
+import { RobotOutlined, CheckCircleOutlined, WarningOutlined, BulbOutlined, UserOutlined, AudioOutlined, AudioFilled } from '@ant-design/icons';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 
 interface ChatRoomProps {
   interviewInfo: any;
@@ -18,6 +19,33 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const isHR = role === 'hr';
   const [aiSuggestion, setAiSuggestion] = useState<string>('你好，我是本场面试的面试官，很高兴你能参加面试，先做个自我介绍吧');
+
+  // 初始化语音识别逻辑 (使用封装的 Hook)
+  const { isListening, startListening, stopListening, isSupported } = useSpeechToText({
+    onResult: (transcript, isFinal) => {
+      if (isFinal) {
+        setInputValue(prev => prev + transcript);
+      }
+    },
+    onError: (err) => {
+      if (err === 'not-allowed') {
+        message.error('请允许浏览器使用麦克风以启用语音输入');
+      }
+    }
+  });
+
+  const toggleListening = () => {
+    if (!isSupported) {
+      message.warning('当前浏览器不支持语音识别功能');
+      return;
+    }
+
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
 
   React.useEffect(() => {
     const saved = localStorage.getItem(`chat_history_${interviewInfo.roomId}`);
@@ -70,9 +98,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
     return () => {
       unsubscribeMsg();
       unsubscribeStatus();
-      // 这里不主动关闭连接，因为 InterviewRoom 卸载时会触发，但如果在 WelcomeStep 和 ChatRoom 切换时可能会导致断连
-      // 现在的架构是 ChatRoom 只负责显示，连接管理在 websocket.ts 中单例维护，所以这里不需要 close
-      // wsService.close(); 
     };
   }, []); 
 
@@ -204,42 +229,46 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
           </div>
 
           <div className="flex-1 overflow-y-auto bg-gray-50/30 p-6 space-y-6 custom-scrollbar">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex w-full gap-4 ${msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                <Avatar 
-                    size={40} 
-                    className={`${msg.sender === 'me' ? 'bg-blue-600' : 'bg-orange-500'} flex-shrink-0 shadow-sm`}
-                    icon={<UserOutlined />}
+            {messages.map((msg) => {
+              // 恢复标准对齐逻辑：自己发送的在右，别人发送的在左
+              const isMyMsg = msg.sender === 'me';
+              
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex w-full gap-4 ${isMyMsg ? 'flex-row-reverse' : 'flex-row'}`}
                 >
-                    {msg.name[0]}
-                </Avatar>
-                
-                <div className={`flex max-w-[70%] flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'}`}>
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-700">{msg.name}</span>
-                    <span className="text-[10px] text-gray-400">{msg.time}</span>
-                    {msg.role && (
-                        <Tag bordered={false} className="mr-0 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0">
-                            {msg.role}
-                        </Tag>
-                    )}
-                  </div>
-                  
-                  <div
-                    className={`relative rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-sm border
-                      ${msg.sender === 'me' 
-                        ? 'bg-blue-600 text-white rounded-tr-none border-blue-600' 
-                        : 'bg-white text-gray-800 border-gray-200 rounded-tl-none'
-                      }`}
+                  <Avatar 
+                      size={40} 
+                      className={`${isMyMsg ? 'bg-blue-600' : 'bg-orange-500'} flex-shrink-0 shadow-sm`}
+                      icon={<UserOutlined />}
                   >
-                    {msg.content}
-                  </div>
+                      {msg.name[0]}
+                  </Avatar>
+                  
+                  <div className={`flex max-w-[70%] flex-col ${isMyMsg ? 'items-end' : 'items-start'}`}>
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-700">{msg.name}</span>
+                      <span className="text-[10px] text-gray-400">{msg.time}</span>
+                      {msg.role && (
+                          <Tag bordered={false} className="mr-0 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0">
+                              {msg.role}
+                          </Tag>
+                      )}
+                    </div>
+                    
+                    <div
+                      className={`relative rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-sm border
+                        ${isMyMsg 
+                          ? 'bg-blue-600 text-white rounded-tr-none border-blue-600' 
+                          : 'bg-white text-gray-800 border-gray-200 rounded-tl-none'
+                        }`}
+                    >
+                      {msg.content}
+                    </div>
 
-                  {isHR && msg.sender === 'other' && (
-                      <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isHR && !isMyMsg && (
+                        <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Tag.CheckableTag checked={false} onChange={() => handleMarking('highlight', '亮点')} className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
                               <CheckCircleOutlined /> 亮点
                           </Tag.CheckableTag>
@@ -250,8 +279,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
                   )}
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
+            );
+          })}
+          <div ref={messagesEndRef} />
           </div>
 
           {isHR && (
@@ -279,14 +309,28 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ interviewInfo, role, onEndInterview
 
           <div className="border-t border-gray-100 bg-white p-4 shrink-0">
             <div className="relative flex items-center gap-3">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="输入消息..."
-                className="h-12 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-              />
+              <div className="relative flex-1 flex items-center">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={isListening ? "正在聆听..." : "输入消息..."}
+                  className={`h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-4 pr-32 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all ${isListening ? 'ring-2 ring-blue-400 border-blue-400' : ''}`}
+                />
+                <Button 
+                  type={isListening ? "primary" : "text"}
+                  danger={isListening}
+                  icon={isListening ? <AudioFilled className="animate-pulse" /> : <AudioOutlined className="text-gray-400" />}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleListening();
+                  }}
+                  className={`absolute right-2 h-8 px-3 flex items-center justify-center rounded-lg transition-all ${!isListening ? 'hover:bg-gray-200' : ''}`}
+                >
+                  <span className="ml-1 text-xs">{isListening ? '停止' : '语音'}</span>
+                </Button>
+              </div>
               <Button 
                 type="primary" 
                 size="large" 

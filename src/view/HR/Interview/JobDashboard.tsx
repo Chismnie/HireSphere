@@ -4,8 +4,6 @@ import {
   UserOutlined,
   ArrowRightOutlined,
   CheckCircleOutlined,
-  CheckOutlined,
-  CloseOutlined,
 } from '@ant-design/icons';
 import { getAllTalents } from '@/apis/HR/Talent';
 import { createInterviewRoom } from '@/apis/HR/Interview';
@@ -24,7 +22,7 @@ interface Candidate {
 const JobDashboard: React.FC = () => {
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortOrder, setSortOrder] = useState<string>('default');
+  const [sortOrder, setSortOrder] = useState<string>('match_desc');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
 
   useEffect(() => {
@@ -124,48 +122,6 @@ const JobDashboard: React.FC = () => {
     }
   };
 
-  const handleAccept = (candidate: Candidate) => {
-    Modal.confirm({
-      title: '确认录用',
-      content: `确定要录用 ${candidate.name} 吗？`,
-      icon: <CheckCircleOutlined className="text-green-600" />,
-      onOk: () => {
-          // Frontend-only update
-          const newStatus = 'accepted';
-          setCandidates(prev => prev.map(c => c.id === candidate.id ? { ...c, status: newStatus } : c));
-          
-          // Persist to localStorage
-          const localStatusStr = localStorage.getItem('local_talent_status');
-          const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
-          localStatusMap[candidate.id] = newStatus;
-          localStorage.setItem('local_talent_status', JSON.stringify(localStatusMap));
-          
-          message.success('已标记为录用');
-      },
-    });
-  };
-
-  const handleReject = (candidate: Candidate) => {
-    Modal.confirm({
-      title: '确认淘汰',
-      content: `确定要淘汰 ${candidate.name} 吗？`,
-      okType: 'danger',
-      onOk: () => {
-          // Frontend-only update
-          const newStatus = 'rejected';
-          setCandidates(prev => prev.map(c => c.id === candidate.id ? { ...c, status: newStatus } : c));
-          
-          // Persist to localStorage
-          const localStatusStr = localStorage.getItem('local_talent_status');
-          const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
-          localStatusMap[candidate.id] = newStatus;
-          localStorage.setItem('local_talent_status', JSON.stringify(localStatusMap));
-          
-          message.success('已归档淘汰');
-      },
-    });
-  };
-
   return (
     <Layout className="h-full bg-transparent p-0">
       {/* 顶部筛选栏 */}
@@ -196,7 +152,7 @@ const JobDashboard: React.FC = () => {
           onChange={setStatusFilter}
         />
         <Select
-          defaultValue="default"
+          defaultValue="match_desc"
           className="w-48 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-300"
           bordered={false}
           size="large"
@@ -243,7 +199,11 @@ const JobDashboard: React.FC = () => {
                     匹配度: {candidate.matchScore}%
                   </span>
                   <span className="rounded-full border border-gray-300 bg-purple-50 px-4 py-1 text-sm font-medium text-purple-700">
-                    状态: {candidate.status === 'pending' ? '未面试' : '已面试'}
+                    状态: {
+                      candidate.status === 'pending' ? '未面试' : 
+                      candidate.status === 'interviewed' ? '已面试' :
+                      candidate.status === 'accepted' ? '已录用' : '已淘汰'
+                    }
                   </span>
                 </div>
 
@@ -266,46 +226,7 @@ const JobDashboard: React.FC = () => {
                 </Button>
               ) : (
                 <div className="flex flex-col items-end gap-2">
-                    <span className="text-sm font-medium text-gray-500">已完成面试</span>
-                    <div className="flex gap-2">
-                        {candidate.status === 'interviewed' ? (
-                          <>
-                            <Button 
-                                icon={<CheckOutlined />}
-                                className="text-blue-600 border-blue-600 hover:text-white hover:bg-blue-600 hover:border-blue-600 rounded-lg px-4 h-9 shadow-sm transition-all"
-                                onClick={() => handleAccept(candidate)}
-                            >
-                                录用
-                            </Button>
-                            <Button 
-                                danger 
-                                icon={<CloseOutlined />}
-                                className="text-red-500 border-red-500 hover:text-white hover:bg-red-500 hover:border-red-500 rounded-lg px-4 h-9 shadow-sm transition-all"
-                                onClick={() => handleReject(candidate)}
-                            >
-                                淘汰
-                            </Button>
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                             <Button 
-                                icon={<CheckOutlined />}
-                                className={`${candidate.status === 'accepted' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'text-gray-400 border-gray-200 hover:text-blue-600 hover:border-blue-600'} rounded-lg px-4 h-9 shadow-sm transition-all`}
-                                onClick={() => handleAccept(candidate)}
-                            >
-                                录用
-                            </Button>
-                            <Button 
-                                danger 
-                                icon={<CloseOutlined />}
-                                className={`${candidate.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200' : 'text-gray-400 border-gray-200 hover:text-red-600 hover:border-red-600'} rounded-lg px-4 h-9 shadow-sm transition-all`}
-                                onClick={() => handleReject(candidate)}
-                            >
-                                淘汰
-                            </Button>
-                          </div>
-                        )}
-                    </div>
+                  <span className="text-sm font-medium text-gray-500">已完成面试</span>
                 </div>
               )}
             </div>

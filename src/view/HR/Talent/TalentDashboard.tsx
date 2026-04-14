@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Select, Button } from 'antd';
+import { Layout, Select, Button, Modal, message, Tag } from 'antd';
 import {
   UserOutlined,
   ArrowRightOutlined,
   CodeOutlined,
   TeamOutlined,
   FieldTimeOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -44,6 +47,7 @@ const TalentDashboard: React.FC = () => {
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('default');
   const [talents, setTalents] = useState<any[]>([]);
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,17 +55,33 @@ const TalentDashboard: React.FC = () => {
         const res: any = await getInterviewedTalents();
         if (res.code === 200 || res.code === 0) {
             const list = res.data?.list || [];
-            // 根据后端返回的字段进行映射
+            
+            // Get local storage overrides
+            const localStatusStr = localStorage.getItem('local_talent_status');
+            const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
+
             const mapped = list.map((item: any) => {
                 let status = 'pending';
-                // 假设后端返回 hire_status
-                if (item.hire_status === '已录用' || item.hire_status === 'accepted') status = 'accepted';
-                if (item.hire_status === '已淘汰' || item.hire_status === 'rejected') status = 'rejected';
+                // Normalize status from backend
+                const backendStatus = (item.interview_status || item.hire_status || '').trim(); 
                 
+                if (backendStatus === '已面试' || backendStatus === 'interviewed' || backendStatus === '面试完成' || backendStatus === '已完成') {
+                    status = 'interviewed';
+                } else if (backendStatus === '已录用' || backendStatus === 'accepted') {
+                    status = 'accepted';
+                } else if (backendStatus === '已淘汰' || backendStatus === 'rejected') {
+                    status = 'rejected';
+                }
+                
+                // Override with local status if exists
+                if (localStatusMap[item.talent_id]) {
+                    status = localStatusMap[item.talent_id];
+                }
+
                 return {
                     id: item.talent_id,
                     name: item.full_name,
-                    position: item.target_position || '前端工程师', // 默认值
+                    position: item.target_position || '前端工程师',
                     status: status,
                     interviewTime: item.interview_time ? new Date(item.interview_time).toLocaleDateString() : 'N/A',
                     tags: item.core_advantages ? (Array.isArray(item.core_advantages) ? item.core_advantages : item.core_advantages.split(/,|，/)) : [],
@@ -75,6 +95,52 @@ const TalentDashboard: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  const handleAccept = (talent: any) => {
+    Modal.confirm({
+      title: '确认录用',
+      content: `确定要录用 ${talent.name} 吗？`,
+      icon: <CheckCircleOutlined className="text-green-600" />,
+      onOk: async () => {
+          // 使用原来的纯前端逻辑，通过 localStorage 持久化
+          const newStatus = 'accepted';
+          
+          // UI update
+          setTalents(prev => prev.map(t => t.id === talent.id ? { ...t, status: newStatus } : t));
+          
+          // Local persistence
+          const localStatusStr = localStorage.getItem('local_talent_status');
+          const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
+          localStatusMap[talent.id] = newStatus;
+          localStorage.setItem('local_talent_status', JSON.stringify(localStatusMap));
+          
+          message.success('已标记为录用');
+      },
+    });
+  };
+
+  const handleReject = (talent: any) => {
+    Modal.confirm({
+      title: '确认淘汰',
+      content: `确定要淘汰 ${talent.name} 吗？`,
+      okType: 'danger',
+      onOk: async () => {
+          // 使用原来的纯前端逻辑，通过 localStorage 持久化
+          const newStatus = 'rejected';
+          
+          // UI update
+          setTalents(prev => prev.map(t => t.id === talent.id ? { ...t, status: newStatus } : t));
+          
+          // Local persistence
+          const localStatusStr = localStorage.getItem('local_talent_status');
+          const localStatusMap = localStatusStr ? JSON.parse(localStatusStr) : {};
+          localStatusMap[talent.id] = newStatus;
+          localStorage.setItem('local_talent_status', JSON.stringify(localStatusMap));
+          
+          message.success('已归档淘汰');
+      },
+    });
+  };
 
   // Dynamic Filter Options
   const positionOptions = React.useMemo(() => {
@@ -116,10 +182,16 @@ const TalentDashboard: React.FC = () => {
                       已淘汰
                   </span>
               );
-          default:
+          case 'interviewed':
               return (
                   <span className="rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700 whitespace-nowrap">
                       面试完成
+                  </span>
+              );
+          default:
+              return (
+                  <span className="rounded-full border border-gray-200 bg-gray-50 px-4 py-1 text-sm font-medium text-gray-500 whitespace-nowrap">
+                      {status === 'pending' ? '待处理' : status}
                   </span>
               );
       }
@@ -195,13 +267,37 @@ const TalentDashboard: React.FC = () => {
                 </div>
 
                 {/* Action Button */}
-                <Button
-                  type="primary"
-                  className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-medium shadow-sm hover:bg-blue-700 border-none shrink-0"
-                  onClick={() => handleViewReport(talent)}
-                >
-                  查看报告 <ArrowRightOutlined />
-                </Button>
+                <div className="flex items-center gap-3 shrink-0">
+                  {talent.status !== 'accepted' && talent.status !== 'rejected' && (
+                    <>
+                      <Button
+                        icon={<CheckOutlined />}
+                        loading={loadingIds.has(talent.id)}
+                        className="flex h-10 items-center gap-2 rounded-lg border-green-600 text-green-600 hover:text-green-700 hover:border-green-700 hover:bg-green-50 px-4 text-sm font-medium"
+                        onClick={() => handleAccept(talent)}
+                      >
+                        录用
+                      </Button>
+                      <Button
+                        danger
+                        icon={<CloseOutlined />}
+                        loading={loadingIds.has(talent.id)}
+                        className="flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium"
+                        onClick={() => handleReject(talent)}
+                      >
+                        淘汰
+                      </Button>
+                    </>
+                  )}
+                  
+                  <Button
+                    type="primary"
+                    className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-medium shadow-sm hover:bg-blue-700 border-none"
+                    onClick={() => handleViewReport(talent)}
+                  >
+                    查看报告 <ArrowRightOutlined />
+                  </Button>
+                </div>
               </div>
             )))}
           </Content>
@@ -226,7 +322,7 @@ const TalentDashboard: React.FC = () => {
              <div className="flex flex-col items-center justify-center rounded-xl border border-gray-300 bg-green-50 p-3 text-center">
                 <TeamOutlined className="mb-2 text-xl text-green-600" />
                 <div className="text-sm text-gray-500">已录用总数</div>
-                <div className="text-xl font-bold text-gray-800">50</div>
+                <div className="text-xl font-bold text-gray-800">{talents.filter(t => t.status === 'accepted').length}</div>
              </div>
              <div className="flex flex-col items-center justify-center rounded-xl border border-gray-300 bg-orange-50 p-3 text-center">
                 <FieldTimeOutlined className="mb-2 text-xl text-orange-600" />

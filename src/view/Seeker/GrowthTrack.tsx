@@ -172,7 +172,7 @@ const GrowthTrack: React.FC = () => {
           <div>
             <Title level={4} className="!mb-0 text-gray-800">AI模拟面试报告</Title>
             <Text className="text-xs text-gray-500">
-              基于目标岗位：<span className="font-bold text-blue-600">产品经理</span> 的模拟面试
+              基于目标岗位：<span className="font-bold text-blue-600">Java后端开发</span> 的模拟面试
             </Text>
           </div>
         </div>

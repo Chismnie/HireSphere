@@ -25,17 +25,6 @@ export const getInterviewedTalents = () => {
   });
 };
 
-export const updateTalentStatus = (talentId: string, status: 'accepted' | 'rejected') => {
-  return request({
-    url: '/api/v1/talent/update_status',
-    method: 'POST',
-    data: {
-      talent_id: talentId,
-      status: status
-    }
-  }) as Promise<ApiResponse<void>>;
-};
-
 // Legacy Mock
 export const getJobDashboard = (params?: { position?: string; status?: string }) => {
   return request({

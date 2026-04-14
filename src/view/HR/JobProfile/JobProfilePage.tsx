@@ -16,7 +16,11 @@ import {
   ReloadOutlined,
   SaveOutlined,
   RobotOutlined,
+  CheckCircleOutlined,
+  AudioOutlined,
+  AudioFilled,
 } from '@ant-design/icons';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 import {
   Radar,
   RadarChart,
@@ -58,6 +62,7 @@ const JobProfilePage: React.FC = () => {
   
   const [newRedLine, setNewRedLine] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaveGuideVisible, setIsSaveGuideVisible] = useState(false);
   
   // 交互状态
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
@@ -66,12 +71,32 @@ const JobProfilePage: React.FC = () => {
   const [newIndicatorName, setNewIndicatorName] = useState('');
   const [newIndicatorCategory, setNewIndicatorCategory] = useState('');
 
+  // 语音输入逻辑 (红线条件输入框)
+  const { isListening: isListeningRedLine, startListening: startRedLine, stopListening: stopRedLine, isSupported } = useSpeechToText({
+    onResult: (transcript, isFinal) => {
+      if (isFinal) {
+        setNewRedLine(prev => prev + transcript);
+      }
+    }
+  });
+
+  const toggleRedLineListening = () => {
+    if (!isSupported) {
+      message.warning('浏览器不支持语音识别');
+      return;
+    }
+    isListeningRedLine ? stopRedLine() : startRedLine();
+  };
+
   // 获取数据
   const fetchData = async (targetId?: string) => {
       try {
           const res: any = await getJobProfiles();
-          if (res.code === 200 || res.code === 0) {
-              const list = res.data?.list || [];
+          const resCode = res.code ?? res.Code;
+          const resData = res.data ?? res.Data;
+          
+          if (resCode === 200 || resCode === 0) {
+              const list = resData?.list || [];
               const mappedList: JobProfile[] = list.map((item: JobProfileData) => ({
                   id: item.job_profile_id || '',
                   name: item.job_title || '未命名岗位',
@@ -119,9 +144,10 @@ const JobProfilePage: React.FC = () => {
                   }
               }
           }
-      } catch (error) {
+      } catch (error: any) {
           console.error('Fetch job profiles failed', error);
-          message.error('获取岗位画像失败');
+          const detail = error.response?.data?.message || error.response?.data?.Message || error.message || '未知错误';
+          message.error(`获取列表失败: ${detail}`);
       }
   };
 
@@ -152,7 +178,8 @@ const JobProfilePage: React.FC = () => {
           : [];
 
       const payload: JobProfileData = {
-          job_profile_id: currentProfile.id.startsWith('temp-') ? undefined : currentProfile.id,
+          // 恢复：如果是新建（temp ID），传 undefined
+          job_profile_id: (currentProfile.id && !currentProfile.id.startsWith('temp-')) ? currentProfile.id : undefined,
           job_title: currentProfile.name,
           competencies: competencies,
           red_line_condition: currentProfile.redLines,
@@ -161,10 +188,24 @@ const JobProfilePage: React.FC = () => {
 
       try {
           const res: any = await saveJobProfile(payload);
-          if (res.code === 200 || res.code === 0) {
+          const resCode = res.code ?? res.Code;
+          const resData = res.data ?? res.Data;
+          const resMessage = res.message ?? res.Message ?? '保存失败';
+          
+          if (resCode === 200 || resCode === 0) {
               message.success('保存成功，画像已更新');
+              
+              // 存储岗位画像状态和名称
+              localStorage.setItem('has_job_profile', 'true');
+              localStorage.setItem('current_job_name', currentProfile.name);
+              // 触发自定义事件，通知 Layout 更新流程条
+              window.dispatchEvent(new Event('job_profile_updated'));
+
+              // 显示下一步引导
+              setIsSaveGuideVisible(true);
+
               // 如果是新建（temp ID），需要更新 activeJobId 为后端返回的 ID
-              const savedId = res.data?.job_profile_id;
+              const savedId = resData?.job_profile_id;
               if (currentProfile.id.startsWith('temp-') && savedId) {
                   // 传递新 ID 给 fetchData
                   fetchData(savedId);
@@ -173,29 +214,38 @@ const JobProfilePage: React.FC = () => {
                   fetchData(currentProfile.id);
               }
           } else {
-              message.error(res.message || '保存失败');
+              message.error(resMessage);
           }
-      } catch (error) {
+      } catch (error: any) {
           console.error('Save job profile failed', error);
-          message.error('保存请求失败');
+          const detail = error.response?.data?.message || error.response?.data?.Message || error.message || '未知错误';
+          message.error(`保存失败: ${detail}`);
       }
   };
 
   const handleAddJob = () => {
-      if (!newJobTitle.trim()) {
+      const trimmedTitle = newJobTitle.trim();
+      
+      if (!trimmedTitle) {
           message.warning('请输入岗位名称');
           return;
       }
 
+      // 恢复简单的字符长度校验
+      if (trimmedTitle.length > 20) {
+          message.error('岗位名称不能超过 20 个字符');
+          return;
+      }
+
       // 检查岗位名称是否重复
-      if (jobList.some(job => job.name === newJobTitle.trim())) {
+      if (jobList.some(job => job.name === trimmedTitle)) {
           message.error('岗位名称已存在，请使用其他名称');
           return;
       }
       
       const newJob: JobProfile = {
           id: `temp-${Date.now()}`, // 临时 ID
-          name: newJobTitle.trim(),
+          name: trimmedTitle,
           indicators: [], // 后端会自动填充
           redLines: [],
           aiSuggestion: '暂无 AI 建议',
@@ -206,7 +256,6 @@ const JobProfilePage: React.FC = () => {
       setCurrentProfile(newJob);
       setIsJobModalOpen(false);
       setNewJobTitle('');
-      message.success('新岗位已创建，点击保存以自动生成画像');
   };
 
   const handleDeleteJob = (e: React.MouseEvent, id: string) => {
@@ -252,6 +301,12 @@ const JobProfilePage: React.FC = () => {
         ind.id === id ? { ...ind, name: newName } : ind
       ),
     });
+  };
+
+  const handleGoToUpload = () => {
+    // 发送自定义事件切换 Tab
+    window.dispatchEvent(new CustomEvent('switch_hr_tab', { detail: { tab: 'resume' } }));
+    setIsSaveGuideVisible(false);
   };
 
   const handleAddRedLine = () => {
@@ -455,6 +510,7 @@ const JobProfilePage: React.FC = () => {
                             onChange={(e) => handleIndicatorNameChange(ind.id, e.target.value)}
                             className="text-sm font-bold text-gray-800 w-32 border-transparent hover:border-gray-300 focus:border-blue-500 px-1 -ml-1 h-7"
                             placeholder="输入名称"
+                            maxLength={20}
                         />
                     ) : (
                         <span className="text-sm font-bold text-gray-800">
@@ -594,19 +650,37 @@ const JobProfilePage: React.FC = () => {
                 ))}
             </div>
 
-            <Input
-                placeholder="+ 输入添加新标签"
-                value={newRedLine}
-                onChange={(e) => setNewRedLine(e.target.value)}
-                onPressEnter={handleAddRedLine}
-                suffix={
-                    <PlusOutlined 
-                        className="text-gray-400 hover:text-blue-600 cursor-pointer" 
-                        onClick={handleAddRedLine}
-                    />
-                }
-                className="rounded-lg border-gray-300 mt-auto"
-            />
+            <div className="flex gap-2 mt-auto">
+              <div className="relative flex-1">
+                <Input
+                   placeholder="例如：必须有 3 年以上 Java 经验"
+                   value={newRedLine}
+                   onChange={(e) => setNewRedLine(e.target.value)}
+                   onPressEnter={handleAddRedLine}
+                   className={`rounded-lg pr-20 border-gray-300 ${isListeningRedLine ? 'ring-2 ring-blue-400' : ''}`}
+                 />
+                 <Button
+                   type={isListeningRedLine ? "primary" : "text"}
+                   danger={isListeningRedLine}
+                   icon={isListeningRedLine ? <AudioFilled className="animate-pulse" /> : <AudioOutlined className="text-gray-400" />}
+                   onClick={(e) => {
+                     e.preventDefault();
+                     toggleRedLineListening();
+                   }}
+                   className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 px-2 flex items-center justify-center rounded-md transition-all ${!isListeningRedLine ? 'hover:bg-gray-100' : ''}`}
+                 >
+                   <span className="ml-1 text-[10px]">{isListeningRedLine ? '停止' : '语音'}</span>
+                 </Button>
+              </div>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddRedLine}
+                className="rounded-lg bg-blue-600 flex-shrink-0"
+              >
+                添加
+              </Button>
+            </div>
         </div>
         </>
         ) : (
@@ -694,6 +768,43 @@ const JobProfilePage: React.FC = () => {
                     }
                 />
             </div>
+        </div>
+      </Modal>
+
+      {/* Save Success Guide Modal */}
+      <Modal
+        title={null}
+        open={isSaveGuideVisible}
+        onCancel={() => setIsSaveGuideVisible(false)}
+        footer={null}
+        centered
+        width={400}
+      >
+        <div className="flex flex-col items-center py-6">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <CheckCircleOutlined className="text-3xl text-green-500" />
+          </div>
+          <h3 className="mb-2 text-xl font-bold text-gray-800">岗位画像已保存 ✅</h3>
+          <p className="mb-8 text-center text-gray-500 px-4">
+            岗位标准已建立！接下来您可以前往简历中心上传简历，系统将基于此画像进行智能筛选。
+          </p>
+          <div className="flex w-full flex-col gap-3">
+            <Button 
+                type="primary" 
+                size="large" 
+                className="h-12 w-full rounded-xl bg-blue-600 font-bold shadow-lg shadow-blue-200"
+                onClick={handleGoToUpload}
+            >
+              去上传简历
+            </Button>
+            <Button 
+                type="text" 
+                className="text-gray-400"
+                onClick={() => setIsSaveGuideVisible(false)}
+            >
+              留在当前页
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

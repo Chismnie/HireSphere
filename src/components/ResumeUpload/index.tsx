@@ -9,6 +9,8 @@ import {
   FileWordOutlined,
   PlusOutlined,
   CheckCircleFilled,
+  InfoCircleOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import PdfPreview from './PdfPreview';
@@ -17,6 +19,8 @@ import FileLoading from './FileLoading';
 const { Dragger } = Upload;
 
 import { uploadResume } from '@/apis/Common/Resume';
+import { getJobProfiles } from '@/apis/HR/Job';
+import { getResumeUrl } from '@/apis/HR/Resume';
 // Import getAllTalents to refresh dashboard if needed
 // However, ResumeUpload is usually in a separate page/modal.
 // The prompt says "update seeker info in interview dashboard".
@@ -40,19 +44,82 @@ interface UploadedFileItem {
   result?: any;
 }
 
+interface ResumeUploadProps {
+  isSeeker?: boolean;
+}
+
 import useUserStore from '@/store/modules/user';
 
-const ResumeUpload: React.FC = () => {
+const ResumeUpload: React.FC<ResumeUploadProps> = ({ isSeeker = false }) => {
   const navigate = useNavigate();
-  const { setId } = useUserStore();
+  const { setId, role, id } = useUserStore();
   const [fileList, setFileList] = useState<UploadedFileItem[]>([]);
+  const [hasJobProfile, setHasJobProfile] = useState(localStorage.getItem('has_job_profile') === 'true');
+  const [currentJobName, setCurrentJobName] = useState(localStorage.getItem('current_job_name') || '');
+  const [isCheckingProfile, setIsCheckingProfile] = useState(role === 'hr' && !isSeeker); // 仅 HR 需要检查
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'upload' | 'loading' | 'list'>(
     'upload'
   );
   const [previewItem, setPreviewItem] = useState<UploadedFileItem | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // 监听文件列表状态，自动切换视图
+  // 1. 自动检查岗位画像列表 (仅限 HR 端)
+  useEffect(() => {
+    if (role !== 'hr' || isSeeker) {
+        setIsCheckingProfile(false);
+        return;
+    }
+
+    const checkProfiles = async () => {
+      try {
+        setIsCheckingProfile(true);
+        const res: any = await getJobProfiles();
+        const resCode = res.code ?? res.Code;
+        const resData = res.data ?? res.Data;
+        
+        if (resCode === 200 || resCode === 0) {
+          const list = resData?.list || [];
+          if (list.length > 0) {
+            // 已有画像
+            setHasJobProfile(true);
+            localStorage.setItem('has_job_profile', 'true');
+            // 如果本地没有存储当前岗位名称，默认取第一个
+            if (!currentJobName) {
+              const firstName = list[0].job_title;
+              setCurrentJobName(firstName);
+              localStorage.setItem('current_job_name', firstName);
+            }
+          } else {
+            // 无画像
+            setHasJobProfile(false);
+            localStorage.setItem('has_job_profile', 'false');
+          }
+        }
+      } catch (error) {
+        console.error('Check job profiles failed:', error);
+      } finally {
+        setIsCheckingProfile(false);
+      }
+    };
+    
+    checkProfiles();
+  }, []);
+
+  // 1.5 获取简历 URL (针对 Seeker)
+  useEffect(() => {
+    if ((role === 'seeker' || isSeeker) && id) {
+      getResumeUrl(id).then((res: any) => {
+        const resCode = res.Code ?? res.code;
+        const resData = res.Data ?? res.data;
+        if ((resCode === 200 || resCode === 0) && resData?.resume_url) {
+          setResumeUrl(resData.resume_url);
+        }
+      }).catch(console.error);
+    }
+  }, [role, id, isSeeker]);
+
+  // 2. 监听文件列表状态，自动切换视图
   useEffect(() => {
     if (fileList.length === 0) {
       setViewMode('upload');
@@ -96,14 +163,26 @@ const ResumeUpload: React.FC = () => {
             );
             message.success(`${item.file.name} 上传成功`);
             
+            // 如果是 seeker，更新预览 URL
+            if ((role === 'seeker' || isSeeker) && res.data.resume_url) {
+                setResumeUrl(res.data.resume_url);
+            }
+
             // Add: Prompt user to view in dashboard
             Modal.success({
                 title: '简历解析成功',
-                content: `候选人 ${res.data.full_name} 的简历已上传并解析，匹配岗位：${res.data.target_position}。`,
-                okText: '去面试看板查看',
+                content: (role === 'hr' && !isSeeker)
+                  ? `候选人 ${res.data.full_name} 的简历已上传并解析，匹配岗位：${res.data.target_position}。`
+                  : `您的简历已上传成功并解析完成。`,
+                okText: (role === 'hr' && !isSeeker) ? '去面试看板查看' : '去简历诊断查看',
                 onOk: () => {
-                    // Navigate to dashboard
-                    navigate('/hr', { state: { activeTab: 'dashboard' } });
+                    if (role === 'hr' && !isSeeker) {
+                        // Navigate to dashboard
+                        navigate('/hr', { state: { activeTab: 'dashboard' } });
+                    } else {
+                        // Seeker navigation - using custom event for SeekerDashboard
+                        window.dispatchEvent(new CustomEvent('switch_seeker_tab', { detail: { tab: 'diagnosis' } }));
+                    }
                 }
             });
 
@@ -178,6 +257,42 @@ const ResumeUpload: React.FC = () => {
 
   // 渲染不同的视图
   const renderView = () => {
+    // 加载中状态
+    if (isCheckingProfile && role === 'hr' && !isSeeker) {
+      return (
+        <div className="flex h-full items-center justify-center">
+          <FileLoading statusText="正在检查岗位画像状态..." />
+        </div>
+      );
+    }
+
+    // 4. 空状态引导 (仅限 HR 端)
+    if (role === 'hr' && !hasJobProfile && !isSeeker) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center shadow-sm">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-orange-50">
+            <SettingOutlined className="text-4xl text-orange-400" />
+          </div>
+          <h3 className="mb-3 text-2xl font-bold text-gray-800">暂未设置岗位画像</h3>
+          <p className="mb-8 max-w-md text-gray-500">
+            建议您先完成岗位画像设置。岗位画像是简历智能筛选的核心依据，设置后系统将自动为您分析简历与岗位的匹配度。
+          </p>
+          <Button
+            type="primary"
+            size="large"
+            icon={<PlusOutlined />}
+            className="h-12 rounded-xl bg-blue-600 px-8 text-lg font-medium shadow-lg shadow-blue-200"
+            onClick={() => {
+                // 发送自定义事件切换 Tab，避免刷新页面
+                window.dispatchEvent(new CustomEvent('switch_hr_tab', { detail: { tab: 'jobProfile' } }));
+            }}
+          >
+            去设置岗位画像
+          </Button>
+        </div>
+      );
+    }
+
     if (viewMode === 'upload') {
       return (
         <div className="flex h-full flex-col justify-center rounded-xl border-2 border-dashed border-blue-200 bg-white p-8 shadow-sm transition-colors hover:border-blue-400">

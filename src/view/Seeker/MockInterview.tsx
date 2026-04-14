@@ -6,11 +6,13 @@ import {
   PlusOutlined,
   UserOutlined,
   AudioOutlined,
+  AudioFilled,
   SendOutlined,
   EditOutlined,
   StopOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -51,7 +53,7 @@ const interviewModes = [
   {
     id: 'custom',
     title: '(核心技术栈名称) 模式',
-    desc: '针对AI产品经理（职位）方向模拟。',
+    desc: '针对Java后端开发（职位）方向模拟。',
     tag: '个人定制',
   },
 ];
@@ -71,7 +73,7 @@ const MockInterview: React.FC = () => {
   
   // Config State
   const [config, setConfig] = useState({
-    jobTitle: '产品经理',
+    jobTitle: 'Java后端开发',
     techStack: 'Spring Boot, Redis',
     level: 'P6',
     style: 'strict',
@@ -84,8 +86,29 @@ const MockInterview: React.FC = () => {
   // Chat State
   const [messages, setMessages] = useState(initialMessages);
   const [inputValue, setInputValue] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(0);
+
+  // 语音识别逻辑
+  const { isListening, startListening, stopListening, isSupported } = useSpeechToText({
+    onResult: (transcript, isFinal) => {
+      if (isFinal) {
+        setInputValue(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + transcript);
+      }
+    },
+    onError: (err) => {
+      if (err === 'not-allowed') {
+        message.error('请允许浏览器使用麦克风以启用语音输入');
+      }
+    }
+  });
+
+  const toggleListening = () => {
+    if (!isSupported) {
+      message.warning('当前浏览器不支持语音识别功能');
+      return;
+    }
+    isListening ? stopListening() : startListening();
+  };
 
   // Timer Effect for Chat
   useEffect(() => {
@@ -151,7 +174,7 @@ const MockInterview: React.FC = () => {
       <div className="mb-8">
         <Title level={2} className="!mb-2 text-gray-800">AI面试训练场</Title>
         <Text className="text-gray-500">
-          基于目标岗位：<span className="font-bold text-blue-600">产品经理</span> 的模拟面试
+          基于目标岗位：<span className="font-bold text-blue-600">Java后端开发</span> 的模拟面试
         </Text>
       </div>
 
@@ -218,7 +241,7 @@ const MockInterview: React.FC = () => {
       </div>
       
       <Text className="mb-8 text-gray-500 block">
-        基于目标岗位：<span className="font-bold text-blue-600">产品经理</span> 的模拟面试
+        基于目标岗位：<span className="font-bold text-blue-600">Java后端开发</span> 的模拟面试
       </Text>
 
       <div className="mx-auto w-full max-w-3xl space-y-8">
@@ -371,7 +394,7 @@ const MockInterview: React.FC = () => {
           <div>
             <Title level={4} className="!mb-0">AI面试训练场</Title>
             <Text className="text-xs text-gray-500">
-              基于目标岗位：<span className="font-bold text-blue-600">产品经理</span> 的模拟面试
+              基于目标岗位：<span className="font-bold text-blue-600">Java后端开发</span> 的模拟面试
             </Text>
           </div>
         </div>
@@ -433,11 +456,11 @@ const MockInterview: React.FC = () => {
         
         <div className="mt-4 flex items-center justify-between">
           <Button 
-            icon={isRecording ? <StopOutlined /> : <AudioOutlined />} 
-            className={`flex items-center gap-2 ${isRecording ? 'bg-red-50 text-red-500 border-red-200' : 'text-gray-600'}`}
-            onClick={() => setIsRecording(!isRecording)}
+            icon={isListening ? <AudioFilled className="animate-pulse" /> : <AudioOutlined />} 
+            className={`flex items-center gap-2 transition-all ${isListening ? 'bg-red-50 text-red-500 border-red-200 shadow-sm' : 'text-gray-600 hover:text-blue-600'}`}
+            onClick={toggleListening}
           >
-            {isRecording ? '停止录音' : '语音作答'}
+            {isListening ? '停止录音' : '语音作答'}
           </Button>
           
           <div className="flex items-center gap-4 text-xs text-gray-400">
@@ -445,7 +468,10 @@ const MockInterview: React.FC = () => {
             <Button 
               type="primary" 
               icon={<SendOutlined />} 
-              onClick={handleSendMessage}
+              onClick={() => {
+                if (isListening) stopListening();
+                handleSendMessage();
+              }}
               disabled={!inputValue.trim()}
               className="bg-blue-600 shadow-sm"
             >
