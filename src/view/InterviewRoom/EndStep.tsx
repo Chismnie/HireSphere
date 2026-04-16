@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Button } from 'antd';
-import { CheckCircleOutlined, HomeOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, HomeOutlined, FileTextOutlined, LayoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 interface EndStepProps {
@@ -58,18 +58,35 @@ const EndStep: React.FC<EndStepProps> = ({ interviewInfo, role }) => {
             <div className="flex gap-4 justify-center">
                 <Button
                     size="large"
+                    icon={<LayoutOutlined />}
                     onClick={() => navigate('/hr', { state: { activeTab: 'dashboard' } })}
-                    className="h-12 w-40 rounded-full border-gray-300 text-base font-medium hover:text-blue-600 hover:border-blue-600"
+                    className="h-12 w-44 rounded-full border-gray-300 text-base font-medium hover:text-blue-600 hover:border-blue-600 flex items-center justify-center gap-2"
                 >
                     返回职位看板
                 </Button>
                 <Button
                     type="primary"
                     size="large"
-                    onClick={() => navigate('/hr', { state: { activeTab: 'talent' } })}
-                    className="h-12 w-40 rounded-full bg-blue-600 text-base font-medium shadow-md hover:bg-blue-700"
+                    icon={<FileTextOutlined />}
+                    onClick={() => {
+                        const talentId = interviewInfo.talentId;
+                        if (talentId) {
+                            // 构造与 TalentDashboard 一致的 talent 对象，方便 TalentReportPage 直接使用
+                            const talent = {
+                                id: talentId,
+                                name: interviewInfo.candidateName,
+                                position: interviewInfo.position,
+                                interviewTime: new Date().toLocaleDateString(),
+                                status: 'interviewed'
+                            };
+                            navigate(`/hr/talent/${talentId}`, { state: { talent } });
+                        } else {
+                            navigate('/hr', { state: { activeTab: 'talent' } });
+                        }
+                    }}
+                    className="h-12 w-44 rounded-full bg-blue-600 text-base font-medium shadow-md hover:bg-blue-700 flex items-center justify-center gap-2"
                 >
-                    查看人才库
+                    查看人才报告
                 </Button>
             </div>
         )}
